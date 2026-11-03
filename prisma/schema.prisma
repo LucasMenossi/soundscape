@@ -6,3 +6,103 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Artist {
+  id             String    @id @default(cuid())
+  musicBrainzId  String    @unique @db.Uuid
+  name           String
+  sortName       String?
+  disambiguation String?
+  countryCode    String?   @db.VarChar(2)
+  beginDate      String?
+  endDate        String?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  albums   Album[]              @relation("PrimaryArtistAlbums")
+  genres   ArtistGenre[]
+  outgoing ArtistRelationship[] @relation("SourceArtist")
+  incoming ArtistRelationship[] @relation("TargetArtist")
+
+  @@index([name])
+  @@index([sortName])
+  @@map("artists")
+}
+
+model Album {
+  id                        String    @id @default(cuid())
+  musicBrainzReleaseGroupId String    @unique @db.Uuid
+  title                     String
+  firstReleaseDate          String?
+  albumType                 String?
+  primaryArtistId           String
+  primaryArtist             Artist    @relation("PrimaryArtistAlbums", fields: [primaryArtistId], references: [id], onDelete: Restrict)
+  lastSyncedAt              DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  genres AlbumGenre[]
+
+  @@index([title])
+  @@index([primaryArtistId])
+  @@index([primaryArtistId, firstReleaseDate])
+  @@map("albums")
+}
+
+model Genre {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  artists ArtistGenre[]
+  albums  AlbumGenre[]
+
+  @@index([name])
+  @@map("genres")
+}
+
+model ArtistGenre {
+  artistId String
+  genreId  String
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  genre  Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([artistId, genreId])
+  @@index([genreId])
+  @@map("artist_genres")
+}
+
+model AlbumGenre {
+  albumId String
+  genreId String
+
+  album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([albumId, genreId])
+  @@index([genreId])
+  @@map("album_genres")
+}
+
+model ArtistRelationship {
+  id                     String   @id @default(cuid())
+  sourceArtistId         String
+  targetArtistId         String
+  relationshipType       String
+  sourceProvider         String
+  externalRelationshipId String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  sourceArtist Artist @relation("SourceArtist", fields: [sourceArtistId], references: [id], onDelete: Cascade)
+  targetArtist Artist @relation("TargetArtist", fields: [targetArtistId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceArtistId, targetArtistId, relationshipType, sourceProvider])
+  @@index([targetArtistId, relationshipType])
+  @@index([sourceArtistId, relationshipType])
+  @@map("artist_relationships")
+}
