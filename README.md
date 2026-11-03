@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SoundScape
 
-## Getting Started
+SoundScape is a music-discovery and personal-curation application. It helps people explore artists, albums, genres, and relationships between artists.
 
-First, run the development server:
+The MVP is not a streaming service: it does not play music, integrate with Spotify, or require a paid streaming subscription.
+
+## Technology
+
+- Next.js App Router and TypeScript
+- Tailwind CSS and shadcn/ui
+- TanStack Query for client-side server state
+- Zustand for ephemeral client UI state
+- PostgreSQL and Prisma
+- Vitest and Playwright
+
+## Getting started
+
+### Requirements
+
+- Node.js LTS compatible with the installed Next.js version
+- npm
+- PostgreSQL (needed when database-backed features are introduced)
+
+### Setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The database and authentication variables are templates for upcoming implementation phases. A working database is not required for the current static foundation page.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Available scripts
 
-## Learn More
+```bash
+npm run dev       # Start the development server
+npm run build     # Create a production build
+npm run start     # Run the production server
+npm run lint      # Run ESLint
+npm run typecheck # Run the TypeScript compiler
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Product constraints
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- MusicBrainz MBIDs are the canonical external identifiers for artists and release groups.
+- Third-party artwork is not publicly displayed until its specific rights and attribution requirements have been reviewed and cleared.
+- Original SoundScape artwork is the fallback when no cleared image is available.
+- The MVP is free-first and excludes playback and streaming integrations.
