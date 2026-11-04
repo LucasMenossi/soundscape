@@ -9,6 +9,9 @@ import type {
   AlbumCatalogProvider,
   AlbumCatalogSearchOptions,
 } from "@/server/providers/musicbrainz/album-catalog.provider";
+import { z } from "zod";
+
+const musicBrainzArtistIdSchema = z.string().uuid();
 
 export interface PersistedAlbumSearchResult {
   album: Album;
@@ -47,6 +50,39 @@ export class AlbumService {
       offset: response.offset,
       results,
     };
+  }
+
+  async getAlbumsByArtist(
+    artistId: string,
+    musicBrainzArtistId: string,
+  ): Promise<AlbumWithPrimaryArtist[]> {
+    const validatedMusicBrainzArtistId = musicBrainzArtistIdSchema.parse(
+      musicBrainzArtistId,
+    );
+    const response = await this.provider.searchAlbumsByArtist(
+      validatedMusicBrainzArtistId,
+      { limit: 100, offset: 0 },
+    );
+
+    const syncedAlbums = await Promise.all(
+      response.results
+        .filter(
+          ({ album }) =>
+            album.primaryArtist.musicBrainzId === validatedMusicBrainzArtistId,
+        )
+        .map(({ album }) => this.repository.upsertFromCatalog(album)),
+    );
+
+    const syncedReleaseGroupIds = new Set(
+      syncedAlbums.map((album) => album.musicBrainzReleaseGroupId),
+    );
+    const persistedAlbums = await this.repository.findByPrimaryArtistId(artistId);
+
+    // Older syncs may have persisted singles, compilations or live releases.
+    // Only return records included in the current, filtered provider response.
+    return persistedAlbums.filter((album) =>
+      syncedReleaseGroupIds.has(album.musicBrainzReleaseGroupId),
+    );
   }
 
   async getAlbumById(id: string): Promise<Album | null> {

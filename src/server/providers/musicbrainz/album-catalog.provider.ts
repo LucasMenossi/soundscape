@@ -21,4 +21,9 @@ export interface AlbumCatalogProvider {
     query: string,
     options?: AlbumCatalogSearchOptions,
   ): Promise<AlbumCatalogSearchResponse>;
+
+  searchAlbumsByArtist(
+    musicBrainzArtistId: string,
+    options?: AlbumCatalogSearchOptions,
+  ): Promise<AlbumCatalogSearchResponse>;
 }

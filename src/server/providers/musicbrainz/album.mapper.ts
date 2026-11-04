@@ -11,7 +11,11 @@ export function mapMusicBrainzReleaseGroup(
 ): AlbumCatalogData | null {
   const primaryArtistCredit = dto["artist-credit"]?.[0];
 
-  if (!primaryArtistCredit) {
+  if (
+    !primaryArtistCredit ||
+    typeof primaryArtistCredit === "string" ||
+    !("artist" in primaryArtistCredit)
+  ) {
     return null;
   }
 

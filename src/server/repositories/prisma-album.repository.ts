@@ -75,6 +75,21 @@ export class PrismaAlbumRepository implements AlbumRepository {
     return record ? mapPrismaAlbumWithPrimaryArtist(record) : null;
   }
 
+  async findByPrimaryArtistId(
+    artistId: string,
+  ): Promise<AlbumWithPrimaryArtist[]> {
+    const records = await prisma.album.findMany({
+      where: { primaryArtistId: artistId },
+      include: { primaryArtist: true },
+      orderBy: [
+        { firstReleaseDate: "asc" },
+        { title: "asc" },
+      ],
+    });
+
+    return records.map(mapPrismaAlbumWithPrimaryArtist);
+  }
+
   async findByMusicBrainzReleaseGroupId(
     musicBrainzReleaseGroupId: string,
   ): Promise<Album | null> {

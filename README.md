@@ -49,3 +49,7 @@ npm run typecheck # Run the TypeScript compiler
 - Third-party artwork is not publicly displayed until its specific rights and attribution requirements have been reviewed and cleared.
 - Original SoundScape artwork is the fallback when no cleared image is available.
 - The MVP is free-first and excludes playback and streaming integrations.
+
+### Artist discography
+
+Artist detail pages include a discography section sourced from MusicBrainz release groups. Results are matched by the artist MusicBrainz ID, synchronized into the local catalog, and displayed in release-date order with links to the internal album detail pages.

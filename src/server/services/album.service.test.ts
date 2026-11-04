@@ -58,11 +58,13 @@ describe("AlbumService", () => {
     const repository: AlbumRepository = {
       findById: vi.fn(),
       findByIdWithPrimaryArtist: vi.fn(),
+      findByPrimaryArtistId: vi.fn(),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog,
     };
 
     const provider: AlbumCatalogProvider = {
+      searchAlbumsByArtist: vi.fn(),
       searchAlbums: vi.fn().mockResolvedValue({
         count: 1,
         offset: 0,
@@ -84,16 +86,80 @@ describe("AlbumService", () => {
     expect(result.results[0].primaryArtistName).toBe("Radiohead");
   });
 
+  it("syncs an artist discography and returns persisted albums", async () => {
+    const upsertFromCatalog = vi.fn().mockResolvedValue(persistedAlbum);
+    const previouslyPersistedNoise: AlbumWithPrimaryArtist = {
+      ...persistedAlbumWithArtist,
+      id: "old-live-release-id",
+      musicBrainzReleaseGroupId: "c1392450-e666-3926-a536-22c65f834433",
+      title: "Old live release",
+    };
+    const findByPrimaryArtistId = vi
+      .fn()
+      .mockResolvedValue([persistedAlbumWithArtist, previouslyPersistedNoise]);
+    const repository: AlbumRepository = {
+      findById: vi.fn(),
+      findByIdWithPrimaryArtist: vi.fn(),
+      findByPrimaryArtistId,
+      findByMusicBrainzReleaseGroupId: vi.fn(),
+      upsertFromCatalog,
+    };
+    const provider: AlbumCatalogProvider = {
+      searchAlbums: vi.fn(),
+      searchAlbumsByArtist: vi.fn().mockResolvedValue({
+        count: 1,
+        offset: 0,
+        results: [{ album: catalogAlbum, score: 100 }],
+      }),
+    };
+
+    const service = new AlbumService(repository, provider);
+    const result = await service.getAlbumsByArtist(
+      "artist-internal-id",
+      catalogAlbum.primaryArtist.musicBrainzId,
+    );
+
+    expect(provider.searchAlbumsByArtist).toHaveBeenCalledWith(
+      catalogAlbum.primaryArtist.musicBrainzId,
+      { limit: 100, offset: 0 },
+    );
+    expect(upsertFromCatalog).toHaveBeenCalledWith(catalogAlbum);
+    expect(findByPrimaryArtistId).toHaveBeenCalledWith("artist-internal-id");
+    expect(result).toEqual([persistedAlbumWithArtist]);
+  });
+
+  it("rejects an invalid MusicBrainz artist ID", async () => {
+    const repository: AlbumRepository = {
+      findById: vi.fn(),
+      findByIdWithPrimaryArtist: vi.fn(),
+      findByPrimaryArtistId: vi.fn(),
+      findByMusicBrainzReleaseGroupId: vi.fn(),
+      upsertFromCatalog: vi.fn(),
+    };
+    const provider: AlbumCatalogProvider = {
+      searchAlbums: vi.fn(),
+      searchAlbumsByArtist: vi.fn(),
+    };
+    const service = new AlbumService(repository, provider);
+
+    await expect(
+      service.getAlbumsByArtist("artist-internal-id", "invalid-id"),
+    ).rejects.toThrow();
+    expect(provider.searchAlbumsByArtist).not.toHaveBeenCalled();
+  });
+
   it("retrieves an album using its internal ID", async () => {
     const repository: AlbumRepository = {
       findById: vi.fn().mockResolvedValue(persistedAlbum),
       findByIdWithPrimaryArtist: vi.fn(),
+      findByPrimaryArtistId: vi.fn(),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog: vi.fn(),
     };
 
     const provider: AlbumCatalogProvider = {
       searchAlbums: vi.fn(),
+      searchAlbumsByArtist: vi.fn(),
     };
 
     const service = new AlbumService(repository, provider);
@@ -111,12 +177,14 @@ describe("AlbumService", () => {
     const repository: AlbumRepository = {
       findById: vi.fn(),
       findByIdWithPrimaryArtist,
+      findByPrimaryArtistId: vi.fn(),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog: vi.fn(),
     };
 
     const provider: AlbumCatalogProvider = {
       searchAlbums: vi.fn(),
+      searchAlbumsByArtist: vi.fn(),
     };
 
     const service = new AlbumService(repository, provider);
