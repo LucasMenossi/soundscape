@@ -164,9 +164,11 @@ function cacheResponse(key: string, data: unknown): void {
   });
 }
 
-export async function musicBrainzGet<T>(
+async function musicBrainzRequest<T>(
   path: string,
   params: Record<string, string>,
+  format: "json" | "txt",
+  parseResponse: (response: Response) => Promise<T>,
 ): Promise<T> {
   const userAgent = getUserAgent();
 
@@ -186,7 +188,7 @@ export async function musicBrainzGet<T>(
     url.searchParams.set(key, value);
   }
 
-  url.searchParams.set("fmt", "json");
+  url.searchParams.set("fmt", format);
 
   const cacheKey = url.toString();
   const cachedResponse = getCachedResponse<T>(cacheKey);
@@ -200,7 +202,7 @@ export async function musicBrainzGet<T>(
       const response = await withRateLimit(() =>
         fetch(url, {
           headers: {
-            Accept: "application/json",
+            Accept: format === "txt" ? "text/plain" : "application/json",
             "User-Agent": userAgent,
           },
           signal: AbortSignal.timeout(timeoutMs),
@@ -225,12 +227,12 @@ export async function musicBrainzGet<T>(
         );
       }
 
-      const data: unknown = await response.json();
+      const data = await parseResponse(response);
 
-      // Only successful HTTP responses with valid JSON are cached.
+      // Only successful responses are cached after their body has been parsed.
       cacheResponse(cacheKey, data);
 
-      return data as T;
+      return data;
     } catch (error) {
       if (error instanceof MusicBrainzError) {
         throw error;
@@ -250,5 +252,24 @@ export async function musicBrainzGet<T>(
 
   throw new MusicBrainzError(
     "MusicBrainz request failed after all retry attempts",
+  );
+}
+
+
+export function musicBrainzGet<T>(
+  path: string,
+  params: Record<string, string>,
+): Promise<T> {
+  return musicBrainzRequest<T>(path, params, "json", async (response) =>
+    (await response.json()) as T,
+  );
+}
+
+export function musicBrainzGetText(
+  path: string,
+  params: Record<string, string> = {},
+): Promise<string> {
+  return musicBrainzRequest<string>(path, params, "txt", (response) =>
+    response.text(),
   );
 }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { MusicBrainzError, musicBrainzGet } from "./client";
+import { MusicBrainzError, musicBrainzGet, musicBrainzGetText } from "./client";
 
 describe("MusicBrainz HTTP client", () => {
   beforeEach(() => {
@@ -50,6 +50,21 @@ describe("MusicBrainz HTTP client", () => {
 
     expect(requestOptions.headers).toEqual({
       Accept: "application/json",
+      "User-Agent": "SoundScape/1.0.0 (contact: test@example.com)",
+    });
+  });
+
+  it("requests plain text for the complete genre vocabulary", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("alternative rock\nambient\n"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await musicBrainzGetText("genre/all");
+
+    expect(result).toBe("alternative rock\nambient\n");
+    const [requestUrl, requestOptions] = fetchMock.mock.calls[0] as [URL, RequestInit];
+    expect(requestUrl.toString()).toContain("fmt=txt");
+    expect(requestOptions.headers).toEqual({
+      Accept: "text/plain",
       "User-Agent": "SoundScape/1.0.0 (contact: test@example.com)",
     });
   });

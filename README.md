@@ -31,7 +31,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The database and authentication variables are templates for upcoming implementation phases. A working database is not required for the current static foundation page.
+The catalog requires a configured PostgreSQL database and MusicBrainz User-Agent. Configure `DATABASE_URL`, `DIRECT_URL`, and `MUSICBRAINZ_USER_AGENT` in your local environment before using catalog routes.
 
 ## Available scripts
 
@@ -53,3 +53,7 @@ npm run typecheck # Run the TypeScript compiler
 ### Artist discography
 
 Artist detail pages include a discography section sourced from MusicBrainz release groups. Results are matched by the artist MusicBrainz ID, synchronized into the local catalog, and displayed in release-date order with links to the internal album detail pages.
+
+### Genre exploration
+
+The `/genres` route synchronizes the curated MusicBrainz genre vocabulary from `/ws/2/genre/all?fmt=txt`, independently of which artists or albums have already been visited. The plain-text endpoint returns the complete vocabulary in one request. The vocabulary is refreshed at most once per 24 hours per server process and is cached by the MusicBrainz HTTP client. Artist and release-group genre associations are imported with `inc=genres`; free-form `inc=tags` values are not used as genres. Existing legacy tag records outside the curated vocabulary are removed during the next successful genre-catalog synchronization. Genre pages show local SoundScape artist and album counts only; they do not imply complete MusicBrainz coverage. No Prisma schema migration is required for this slice because the existing genre tables are reused.
