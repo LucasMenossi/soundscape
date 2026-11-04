@@ -1,14 +1,5 @@
-import type { ArtistCatalogData } from "@/server/domain/artist";
-
+import { AlbumCatalogData } from "@/server/domain/album";
 import type { MusicBrainzReleaseGroupDTO } from "./album.schemas";
-
-export interface AlbumCatalogData {
-  musicBrainzReleaseGroupId: string;
-  title: string;
-  firstReleaseDate: string | null;
-  albumType: string | null;
-  primaryArtist: ArtistCatalogData;
-}
 
 export interface AlbumSearchResult {
   album: AlbumCatalogData;

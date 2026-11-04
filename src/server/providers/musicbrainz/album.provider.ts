@@ -8,6 +8,7 @@ import {
   mapMusicBrainzReleaseGroupSearchResult,
   type AlbumSearchResult,
 } from "./album.mapper";
+import { AlbumCatalogProvider } from "./album-catalog.provider";
 
 export interface AlbumSearchResponse {
   count: number;
@@ -20,7 +21,7 @@ export interface AlbumSearchOptions {
   offset?: number;
 }
 
-export class MusicBrainzAlbumProvider {
+export class MusicBrainzAlbumProvider implements AlbumCatalogProvider {
   async searchAlbums(
     query: string,
     options: AlbumSearchOptions = {},
