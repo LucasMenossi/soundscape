@@ -1,4 +1,4 @@
-import { artistService } from "../src/server/services/artist.service";
+import { artistService } from "../src/server/services/artist-service.instance";
 
 async function main() {
   const query = "Radiohead";

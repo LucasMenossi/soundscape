@@ -2,6 +2,12 @@ import "server-only";
 
 import type { ArtistCatalogData } from "@/server/domain/artist";
 
+import type {
+  ArtistCatalogProvider,
+  ArtistCatalogSearchOptions,
+  ArtistCatalogSearchResponse,
+} from "./artist-catalog.provider";
+
 import { MusicBrainzError, musicBrainzGet } from "./client";
 import {
   musicBrainzArtistSchema,
@@ -10,25 +16,13 @@ import {
 import {
   mapMusicBrainzArtist,
   mapMusicBrainzArtistSearchResult,
-  type ArtistSearchResult,
 } from "./artist.mapper";
 
-export interface ArtistSearchResponse {
-  count: number;
-  offset: number;
-  results: ArtistSearchResult[];
-}
-
-export interface ArtistSearchOptions {
-  limit?: number;
-  offset?: number;
-}
-
-export class MusicBrainzArtistProvider {
+export class MusicBrainzArtistProvider implements ArtistCatalogProvider {
   async searchArtists(
     query: string,
-    options: ArtistSearchOptions = {},
-  ): Promise<ArtistSearchResponse> {
+    options: ArtistCatalogSearchOptions = {},
+  ): Promise<ArtistCatalogSearchResponse> {
     const normalizedQuery = query.trim();
 
     if (!normalizedQuery) {

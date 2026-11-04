@@ -4,16 +4,25 @@ import { z } from "zod";
 
 import type { Artist } from "@/server/domain/artist";
 import type { ArtistRepository } from "@/server/repositories/artist.repository";
-
-import { PrismaArtistRepository } from "@/server/repositories/prisma-artist.repository";
-import { MusicBrainzArtistProvider } from "@/server/providers/musicbrainz/artist.provider";
+import type { ArtistCatalogProvider } from "@/server/providers/musicbrainz/artist-catalog.provider";
 
 const musicBrainzIdSchema = z.string().uuid();
+
+export interface PersistedArtistSearchResult {
+  artist: Artist;
+  score: number | null;
+}
+
+export interface PersistedArtistSearchResponse {
+  count: number;
+  offset: number;
+  results: PersistedArtistSearchResult[];
+}
 
 export class ArtistService {
   constructor(
     private readonly repository: ArtistRepository,
-    private readonly provider: MusicBrainzArtistProvider,
+    private readonly provider: ArtistCatalogProvider,
   ) {}
 
   async searchArtists(
@@ -22,8 +31,25 @@ export class ArtistService {
       limit?: number;
       offset?: number;
     },
-  ) {
-    return this.provider.searchArtists(query, options);
+  ): Promise<PersistedArtistSearchResponse> {
+    const response = await this.provider.searchArtists(query, options);
+
+    const results = await Promise.all(
+      response.results.map(async ({ artist, score }) => ({
+        artist: await this.repository.upsertFromCatalog(artist),
+        score,
+      })),
+    );
+
+    return {
+      count: response.count,
+      offset: response.offset,
+      results,
+    };
+  }
+
+  async getArtistById(id: string): Promise<Artist | null> {
+    return this.repository.findById(id);
   }
 
   async getArtist(musicBrainzId: string): Promise<Artist | null> {
@@ -46,8 +72,3 @@ export class ArtistService {
     return this.repository.upsertFromCatalog(catalogArtist);
   }
 }
-
-export const artistService = new ArtistService(
-  new PrismaArtistRepository(),
-  new MusicBrainzArtistProvider(),
-);
