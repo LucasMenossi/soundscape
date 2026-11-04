@@ -32,6 +32,8 @@ describe("ArtistService", () => {
       findById: vi.fn(),
       findByMusicBrainzId: vi.fn(),
       upsertFromCatalog,
+      syncRelationships: vi.fn(),
+      findRelationshipsBySourceArtistId: vi.fn().mockResolvedValue([]),
     };
 
     const provider: ArtistCatalogProvider = {
@@ -46,6 +48,7 @@ describe("ArtistService", () => {
         ],
       }),
       getArtist: vi.fn(),
+      getArtistRelationships: vi.fn().mockResolvedValue([]),
     };
 
     const service = new ArtistService(repository, provider);
@@ -70,16 +73,64 @@ describe("ArtistService", () => {
     expect(result.results[0].artist.id).toBe("artist-internal-id");
   });
 
+  it("syncs curated artist relationships through the provider and repository", async () => {
+    const relationships = [
+      {
+        relationshipType: "member of band" as const,
+        direction: "backward" as const,
+        targetArtist: {
+          musicBrainzId: "b7ffd2af-418f-4be2-bdd1-22f8b48613da",
+          name: "Thom Yorke",
+          sortName: "Yorke, Thom",
+          disambiguation: null,
+          countryCode: null,
+          beginDate: null,
+          endDate: null,
+        },
+      },
+    ];
+    const syncRelationships = vi.fn().mockResolvedValue(undefined);
+    const repository: ArtistRepository = {
+      findById: vi.fn(),
+      findByMusicBrainzId: vi.fn(),
+      upsertFromCatalog: vi.fn(),
+      syncRelationships,
+      findRelationshipsBySourceArtistId: vi.fn().mockResolvedValue([]),
+    };
+    const provider: ArtistCatalogProvider = {
+      searchArtists: vi.fn(),
+      getArtist: vi.fn(),
+      getArtistRelationships: vi.fn().mockResolvedValue(relationships),
+    };
+
+    const service = new ArtistService(repository, provider);
+    await service.syncArtistRelationships(
+      "artist-internal-id",
+      catalogArtist.musicBrainzId,
+    );
+
+    expect(provider.getArtistRelationships).toHaveBeenCalledWith(
+      catalogArtist.musicBrainzId,
+    );
+    expect(syncRelationships).toHaveBeenCalledWith(
+      "artist-internal-id",
+      relationships,
+    );
+  });
+
   it("retrieves an artist using its internal ID", async () => {
     const repository: ArtistRepository = {
       findById: vi.fn().mockResolvedValue(persistedArtist),
       findByMusicBrainzId: vi.fn(),
       upsertFromCatalog: vi.fn(),
+      syncRelationships: vi.fn(),
+      findRelationshipsBySourceArtistId: vi.fn().mockResolvedValue([]),
     };
 
     const provider: ArtistCatalogProvider = {
       searchArtists: vi.fn(),
       getArtist: vi.fn(),
+      getArtistRelationships: vi.fn().mockResolvedValue([]),
     };
 
     const service = new ArtistService(repository, provider);

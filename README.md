@@ -57,3 +57,7 @@ Artist detail pages include a discography section sourced from MusicBrainz relea
 ### Genre exploration
 
 The `/genres` route synchronizes the curated MusicBrainz genre vocabulary from `/ws/2/genre/all?fmt=txt`, independently of which artists or albums have already been visited. The plain-text endpoint returns the complete vocabulary in one request. The vocabulary is refreshed at most once per 24 hours per server process and is cached by the MusicBrainz HTTP client. Artist and release-group genre associations are imported with `inc=genres`; free-form `inc=tags` values are not used as genres. Existing legacy tag records outside the curated vocabulary are removed during the next successful genre-catalog synchronization. Genre pages show local SoundScape artist and album counts only; they do not imply complete MusicBrainz coverage. No Prisma schema migration is required for this slice because the existing genre tables are reused.
+
+### Artist relationships
+
+Artist detail pages request MusicBrainz `artist-rels` and persist a deliberately small subset of relationship types: band membership, collaboration, and supporting musicians. Direction is translated into a source-relative relationship label before persistence, so the existing `artist_relationships` schema can be reused without a migration. Relationship sections are shown only when MusicBrainz supplies a supported relationship; they are catalog relationships, not similarity recommendations. Provider failures do not block the artist page.

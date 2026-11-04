@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { ArtistCatalogData } from "@/server/domain/artist";
+import type {
+  ArtistCatalogData,
+  ArtistRelationshipCatalogData,
+} from "@/server/domain/artist";
 
 import type {
   ArtistCatalogProvider,
@@ -12,10 +15,13 @@ import { MusicBrainzError, musicBrainzGet } from "./client";
 import {
   musicBrainzArtistSchema,
   musicBrainzArtistSearchSchema,
+  musicBrainzArtistRelationshipsResponseSchema,
 } from "./artist.schemas";
+
 import {
   mapMusicBrainzArtist,
   mapMusicBrainzArtistSearchResult,
+  mapMusicBrainzArtistRelationships,
 } from "./artist.mapper";
 
 export class MusicBrainzArtistProvider implements ArtistCatalogProvider {
@@ -82,5 +88,28 @@ export class MusicBrainzArtistProvider implements ArtistCatalogProvider {
     }
 
     return mapMusicBrainzArtist(parsedArtist.data);
+  }
+
+  async getArtistRelationships(
+    musicBrainzId: string,
+  ): Promise<ArtistRelationshipCatalogData[]> {
+    const response = await musicBrainzGet<unknown>(`artist/${musicBrainzId}`, {
+      inc: "artist-rels",
+    });
+    const parsed =
+      musicBrainzArtistRelationshipsResponseSchema.safeParse(response);
+
+    if (!parsed.success) {
+      throw new MusicBrainzError(
+        "MusicBrainz returned an invalid artist relationships response",
+        undefined,
+        { cause: parsed.error },
+      );
+    }
+
+    return mapMusicBrainzArtistRelationships(
+      parsed.data.relations,
+      musicBrainzId,
+    );
   }
 }

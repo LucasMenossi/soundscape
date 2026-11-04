@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import type { Artist } from "@/server/domain/artist";
+import type { Artist, ArtistRelationship } from "@/server/domain/artist";
 import type { ArtistRepository } from "@/server/repositories/artist.repository";
 import type { ArtistCatalogProvider } from "@/server/providers/musicbrainz/artist-catalog.provider";
 
@@ -50,6 +50,20 @@ export class ArtistService {
 
   async getArtistById(id: string): Promise<Artist | null> {
     return this.repository.findById(id);
+  }
+
+  async syncArtistRelationships(
+    artistId: string,
+    musicBrainzId: string,
+  ): Promise<void> {
+    const validatedId = musicBrainzIdSchema.parse(musicBrainzId);
+    const relationships =
+      await this.provider.getArtistRelationships(validatedId);
+    await this.repository.syncRelationships(artistId, relationships);
+  }
+
+  getArtistRelationships(artistId: string): Promise<ArtistRelationship[]> {
+    return this.repository.findRelationshipsBySourceArtistId(artistId);
   }
 
   async getArtist(musicBrainzId: string): Promise<Artist | null> {

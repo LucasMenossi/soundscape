@@ -1,4 +1,7 @@
-import type { ArtistCatalogData } from "@/server/domain/artist";
+import type {
+  ArtistCatalogData,
+  ArtistRelationshipCatalogData,
+} from "@/server/domain/artist";
 
 export interface ArtistCatalogSearchOptions {
   limit?: number;
@@ -23,4 +26,8 @@ export interface ArtistCatalogProvider {
   ): Promise<ArtistCatalogSearchResponse>;
 
   getArtist(musicBrainzId: string): Promise<ArtistCatalogData | null>;
+
+  getArtistRelationships(
+    musicBrainzId: string,
+  ): Promise<ArtistRelationshipCatalogData[]>;
 }
