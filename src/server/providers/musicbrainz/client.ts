@@ -5,6 +5,15 @@ const MUSICBRAINZ_BASE_URL = "https://musicbrainz.org/ws/2";
 const DEFAULT_DELAY_MS = 1100;
 const DEFAULT_TIMEOUT_MS = 20_000;
 const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_CACHE_TTL_MS = 300_000;
+const MAX_CACHE_ENTRIES = 500;
+
+interface CacheEntry {
+  data: unknown;
+  expiresAt: number;
+}
+
+const responseCache = new Map<string, CacheEntry>();
 
 let requestQueue: Promise<void> = Promise.resolve();
 let lastRequestStartedAt = 0;
@@ -45,10 +54,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Serializes requests within the current Node.js process and
- * enforces a minimum interval between request start times.
- */
 async function withRateLimit<T>(operation: () => Promise<T>): Promise<T> {
   const previousRequest = requestQueue;
 
@@ -103,12 +108,60 @@ function isRetryableStatus(status: number): boolean {
   return status === 429 || status === 502 || status === 503 || status === 504;
 }
 
-function isRetryableError(error: unknown): boolean {
-  if (error instanceof MusicBrainzError) {
-    return false;
+function getCacheTTL(): number {
+  return getPositiveInteger(
+    process.env.MUSICBRAINZ_CACHE_TTL_MS,
+    DEFAULT_CACHE_TTL_MS,
+  );
+}
+
+function getCachedResponse<T>(key: string): T | null {
+  const entry = responseCache.get(key);
+
+  if (!entry) {
+    return null;
   }
 
-  return true;
+  if (entry.expiresAt <= Date.now()) {
+    responseCache.delete(key);
+    return null;
+  }
+
+  // Return a copy so consumers cannot mutate the cached object.
+  return structuredClone(entry.data) as T;
+}
+
+function removeExpiredEntries(): void {
+  const now = Date.now();
+
+  for (const [key, entry] of responseCache.entries()) {
+    if (entry.expiresAt <= now) {
+      responseCache.delete(key);
+    }
+  }
+}
+
+function cacheResponse(key: string, data: unknown): void {
+  const ttl = getCacheTTL();
+
+  if (ttl <= 0) {
+    return;
+  }
+
+  removeExpiredEntries();
+
+  if (responseCache.size >= MAX_CACHE_ENTRIES && !responseCache.has(key)) {
+    const oldestKey = responseCache.keys().next().value;
+
+    if (oldestKey) {
+      responseCache.delete(oldestKey);
+    }
+  }
+
+  responseCache.set(key, {
+    data: structuredClone(data),
+    expiresAt: Date.now() + ttl,
+  });
 }
 
 export async function musicBrainzGet<T>(
@@ -134,6 +187,13 @@ export async function musicBrainzGet<T>(
   }
 
   url.searchParams.set("fmt", "json");
+
+  const cacheKey = url.toString();
+  const cachedResponse = getCachedResponse<T>(cacheKey);
+
+  if (cachedResponse !== null) {
+    return cachedResponse;
+  }
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -165,13 +225,18 @@ export async function musicBrainzGet<T>(
         );
       }
 
-      return (await response.json()) as T;
+      const data: unknown = await response.json();
+
+      // Only successful HTTP responses with valid JSON are cached.
+      cacheResponse(cacheKey, data);
+
+      return data as T;
     } catch (error) {
       if (error instanceof MusicBrainzError) {
         throw error;
       }
 
-      if (!isRetryableError(error) || attempt >= maxRetries) {
+      if (attempt >= maxRetries) {
         throw new MusicBrainzError(
           "Unable to communicate with MusicBrainz",
           undefined,
