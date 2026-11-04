@@ -1,12 +1,20 @@
 import "server-only";
 
-import type { Album, AlbumCatalogData } from "@/server/domain/album";
+import type { Prisma } from "@/generated/prisma/client";
+
+import type {
+  Album,
+  AlbumCatalogData,
+  AlbumWithPrimaryArtist,
+} from "@/server/domain/album";
+import type { Artist } from "@/server/domain/artist";
 import { prisma } from "@/server/db";
 import type { AlbumRepository } from "./album.repository";
 
-type PrismaAlbum = NonNullable<
-  Awaited<ReturnType<typeof prisma.album.findUnique>>
->;
+type PrismaAlbum = Prisma.AlbumGetPayload<object>;
+type PrismaAlbumWithPrimaryArtist = Prisma.AlbumGetPayload<{
+  include: { primaryArtist: true };
+}>;
 
 function mapPrismaAlbum(record: PrismaAlbum): Album {
   return {
@@ -22,6 +30,29 @@ function mapPrismaAlbum(record: PrismaAlbum): Album {
   };
 }
 
+function mapPrismaAlbumWithPrimaryArtist(
+  record: PrismaAlbumWithPrimaryArtist,
+): AlbumWithPrimaryArtist {
+  const primaryArtist: Artist = {
+    id: record.primaryArtist.id,
+    musicBrainzId: record.primaryArtist.musicBrainzId,
+    name: record.primaryArtist.name,
+    sortName: record.primaryArtist.sortName,
+    disambiguation: record.primaryArtist.disambiguation,
+    countryCode: record.primaryArtist.countryCode,
+    beginDate: record.primaryArtist.beginDate,
+    endDate: record.primaryArtist.endDate,
+    lastSyncedAt: record.primaryArtist.lastSyncedAt,
+    createdAt: record.primaryArtist.createdAt,
+    updatedAt: record.primaryArtist.updatedAt,
+  };
+
+  return {
+    ...mapPrismaAlbum(record),
+    primaryArtist,
+  };
+}
+
 export class PrismaAlbumRepository implements AlbumRepository {
   async findById(id: string): Promise<Album | null> {
     const record = await prisma.album.findUnique({
@@ -29,6 +60,19 @@ export class PrismaAlbumRepository implements AlbumRepository {
     });
 
     return record ? mapPrismaAlbum(record) : null;
+  }
+
+  async findByIdWithPrimaryArtist(
+    id: string,
+  ): Promise<AlbumWithPrimaryArtist | null> {
+    const record = await prisma.album.findUnique({
+      where: { id },
+      include: {
+        primaryArtist: true,
+      },
+    });
+
+    return record ? mapPrismaAlbumWithPrimaryArtist(record) : null;
   }
 
   async findByMusicBrainzReleaseGroupId(
@@ -59,6 +103,8 @@ export class PrismaAlbumRepository implements AlbumRepository {
           endDate: data.primaryArtist.endDate,
           lastSyncedAt: now,
         },
+        // Release-group artist credits contain only partial artist metadata.
+        // Preserve richer values already stored in the catalog.
         update: {
           name: data.primaryArtist.name,
           ...(data.primaryArtist.sortName !== null && {

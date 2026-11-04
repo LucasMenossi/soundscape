@@ -1,7 +1,15 @@
-import type { Album, AlbumCatalogData } from "@/server/domain/album";
+import type {
+  Album,
+  AlbumCatalogData,
+  AlbumWithPrimaryArtist,
+} from "@/server/domain/album";
 
 export interface AlbumRepository {
   findById(id: string): Promise<Album | null>;
+
+  findByIdWithPrimaryArtist(
+    id: string,
+  ): Promise<AlbumWithPrimaryArtist | null>;
 
   findByMusicBrainzReleaseGroupId(
     musicBrainzReleaseGroupId: string,

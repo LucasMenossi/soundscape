@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { Album } from "@/server/domain/album";
+import type {
+  Album,
+  AlbumWithPrimaryArtist,
+} from "@/server/domain/album";
 import type { AlbumRepository } from "@/server/repositories/album.repository";
 import type {
   AlbumCatalogProvider,
@@ -9,6 +12,7 @@ import type {
 
 export interface PersistedAlbumSearchResult {
   album: Album;
+  primaryArtistName: string;
   score: number | null;
 }
 
@@ -33,6 +37,7 @@ export class AlbumService {
     const results = await Promise.all(
       response.results.map(async ({ album, score }) => ({
         album: await this.repository.upsertFromCatalog(album),
+        primaryArtistName: album.primaryArtist.name,
         score,
       })),
     );
@@ -46,5 +51,11 @@ export class AlbumService {
 
   async getAlbumById(id: string): Promise<Album | null> {
     return this.repository.findById(id);
+  }
+
+  async getAlbumWithPrimaryArtist(
+    id: string,
+  ): Promise<AlbumWithPrimaryArtist | null> {
+    return this.repository.findByIdWithPrimaryArtist(id);
   }
 }

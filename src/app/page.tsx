@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ArtistSearchForm } from "@/components/search/artist-search-form";
+import { CatalogSearchForm } from "@/components/search/catalog-search-form";
 
 export default function Home() {
   return (
@@ -10,7 +10,7 @@ export default function Home() {
       </p>
 
       <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
-        Find your next favorite artist.
+        Find your next favorite music.
       </h1>
 
       <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
@@ -19,11 +19,11 @@ export default function Home() {
       </p>
 
       <div className="mt-10 max-w-2xl">
-        <ArtistSearchForm />
+        <CatalogSearchForm />
       </div>
 
       <p className="mt-5 text-sm text-muted-foreground">
-        No streaming. Just music discovery.
+        Search artists and albums. No streaming. Just music discovery.
       </p>
 
       <div className="mt-16">

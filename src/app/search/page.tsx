@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { ArtistSearchForm } from "@/components/search/artist-search-form";
+import { CatalogSearchForm } from "@/components/search/catalog-search-form";
 import { MusicBrainzError } from "@/server/providers/musicbrainz/client";
+import { albumService } from "@/server/services/album-service.instance";
 import { artistService } from "@/server/services/artist-service.instance";
 
 interface SearchPageProps {
@@ -12,7 +13,7 @@ interface SearchPageProps {
 
 export const metadata = {
   title: "Search",
-  description: "Search for artists in the SoundScape music catalog.",
+  description: "Search for artists and albums in the SoundScape music catalog.",
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
@@ -20,14 +21,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const rawQuery = Array.isArray(params.q) ? params.q[0] : params.q;
   const query = rawQuery?.trim().slice(0, 100) ?? "";
 
-  let searchResult = null;
+  let artistResults = null;
+  let albumResults = null;
   let searchFailed = false;
 
   if (query) {
     try {
-      searchResult = await artistService.searchArtists(query, {
-        limit: 10,
-      });
+      [artistResults, albumResults] = await Promise.all([
+        artistService.searchArtists(query, { limit: 10 }),
+        albumService.searchAlbums(query, { limit: 10 }),
+      ]);
     } catch (error) {
       if (error instanceof MusicBrainzError) {
         searchFailed = true;
@@ -36,6 +39,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       }
     }
   }
+
+  const totalResults =
+    (artistResults?.results.length ?? 0) + (albumResults?.results.length ?? 0);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-16 sm:py-24">
@@ -48,21 +54,21 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </Link>
 
         <h1 className="mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Search artists
+          Search the catalog
         </h1>
 
         <p className="mt-3 text-muted-foreground">
-          Find artists and explore their music catalog.
+          Find artists and albums in the SoundScape music catalog.
         </p>
       </div>
 
-      <ArtistSearchForm defaultValue={query} />
+      <CatalogSearchForm defaultValue={query} />
 
       {!query && (
         <div className="mt-16 rounded-xl border border-dashed border-border px-6 py-12 text-center">
           <h2 className="font-medium">Start exploring</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Enter an artist name to discover their catalog.
+            Enter an artist or album name to discover music.
           </p>
         </div>
       )}
@@ -80,62 +86,93 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </div>
       )}
 
-      {searchResult && (
-        <section className="mt-12" aria-labelledby="search-results-heading">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <h2 id="search-results-heading" className="text-lg font-semibold">
-              Results
-            </h2>
+      {query && !searchFailed && (
+        <div className="mt-12 space-y-12">
+          <p className="text-sm text-muted-foreground">
+            {totalResults} {totalResults === 1 ? "result" : "results"} found
+            across artists and albums.
+          </p>
 
-            <span className="text-sm text-muted-foreground">
-              {searchResult.count}{" "}
-              {searchResult.count === 1 ? "artist" : "artists"} found
-            </span>
-          </div>
+          <section aria-labelledby="artist-results-heading">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <h2 id="artist-results-heading" className="text-lg font-semibold">
+                Artists
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {artistResults?.count ?? 0} found
+              </span>
+            </div>
 
-          {searchResult.results.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border px-6 py-12 text-center">
-              <h3 className="font-medium">No artists found</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Try another artist name or check your spelling.
+            {!artistResults?.results.length ? (
+              <p className="rounded-xl border border-dashed border-border px-6 py-8 text-sm text-muted-foreground">
+                No artists found for this search.
               </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border rounded-xl border border-border">
-              {searchResult.results.map(({ artist }) => (
-                <Link
-                  key={artist.id}
-                  href={`/artists/${artist.id}`}
-                  className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
-                >
-                  <div className="min-w-0">
-                    <h3 className="truncate font-medium transition-colors group-hover:text-primary">
-                      {artist.name}
-                    </h3>
-
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {artist.disambiguation ?? artist.countryCode ?? "Artist"}
-                    </p>
-                  </div>
-
-                  <span
-                    aria-hidden="true"
-                    className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1"
+            ) : (
+              <div className="divide-y divide-border rounded-xl border border-border">
+                {artistResults.results.map(({ artist }) => (
+                  <Link
+                    key={artist.id}
+                    href={`/artists/${artist.id}`}
+                    className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
                   >
-                    →
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
+                    <div className="min-w-0">
+                      <h3 className="truncate font-medium transition-colors group-hover:text-primary">
+                        {artist.name}
+                      </h3>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                        {artist.disambiguation ?? artist.countryCode ?? "Artist"}
+                      </p>
+                    </div>
+                    <span aria-hidden="true" className="shrink-0 text-muted-foreground">
+                      →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
 
-          {searchResult.count > searchResult.results.length && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Showing {searchResult.results.length} of {searchResult.count}{" "}
-              results.
-            </p>
-          )}
-        </section>
+          <section aria-labelledby="album-results-heading">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <h2 id="album-results-heading" className="text-lg font-semibold">
+                Albums
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {albumResults?.count ?? 0} found
+              </span>
+            </div>
+
+            {!albumResults?.results.length ? (
+              <p className="rounded-xl border border-dashed border-border px-6 py-8 text-sm text-muted-foreground">
+                No albums found for this search.
+              </p>
+            ) : (
+              <div className="divide-y divide-border rounded-xl border border-border">
+                {albumResults.results.map(({ album, primaryArtistName }) => (
+                  <Link
+                    key={album.id}
+                    href={`/albums/${album.id}`}
+                    className="group flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="truncate font-medium transition-colors group-hover:text-primary">
+                        {album.title}
+                      </h3>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                        {primaryArtistName}
+                        {album.firstReleaseDate ? ` · ${album.firstReleaseDate.slice(0, 4)}` : ""}
+                        {album.albumType ? ` · ${album.albumType}` : ""}
+                      </p>
+                    </div>
+                    <span aria-hidden="true" className="shrink-0 text-muted-foreground">
+                      →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       )}
     </main>
   );
