@@ -1,0 +1,59 @@
+import type { ArtistCatalogData } from "@/server/domain/artist";
+
+import type { MusicBrainzReleaseGroupDTO } from "./album.schemas";
+
+export interface AlbumCatalogData {
+  musicBrainzReleaseGroupId: string;
+  title: string;
+  firstReleaseDate: string | null;
+  albumType: string | null;
+  primaryArtist: ArtistCatalogData;
+}
+
+export interface AlbumSearchResult {
+  album: AlbumCatalogData;
+  score: number | null;
+}
+
+export function mapMusicBrainzReleaseGroup(
+  dto: MusicBrainzReleaseGroupDTO,
+): AlbumCatalogData | null {
+  const primaryArtistCredit = dto["artist-credit"]?.[0];
+
+  if (!primaryArtistCredit) {
+    return null;
+  }
+
+  const primaryArtist = primaryArtistCredit.artist;
+
+  return {
+    musicBrainzReleaseGroupId: dto.id,
+    title: dto.title,
+    firstReleaseDate: dto["first-release-date"] ?? null,
+    albumType: dto["primary-type"] ?? null,
+    primaryArtist: {
+      musicBrainzId: primaryArtist.id,
+      name: primaryArtist.name,
+      sortName: primaryArtist["sort-name"] ?? null,
+      disambiguation: null,
+      countryCode: null,
+      beginDate: null,
+      endDate: null,
+    },
+  };
+}
+
+export function mapMusicBrainzReleaseGroupSearchResult(
+  dto: MusicBrainzReleaseGroupDTO,
+): AlbumSearchResult | null {
+  const album = mapMusicBrainzReleaseGroup(dto);
+
+  if (!album) {
+    return null;
+  }
+
+  return {
+    album,
+    score: dto.score ?? null,
+  };
+}
