@@ -2,7 +2,7 @@ import { MusicBrainzAlbumProvider } from "../src/server/providers/musicbrainz/al
 
 async function main() {
   const provider = new MusicBrainzAlbumProvider();
-  const query = 'releasegroup:"OK Computer"';
+  const query = "OK Computer";
 
   console.log(`Searching albums: ${query}`);
 

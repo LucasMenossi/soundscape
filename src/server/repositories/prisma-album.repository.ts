@@ -61,12 +61,9 @@ export class PrismaAlbumRepository implements AlbumRepository {
         },
         update: {
           name: data.primaryArtist.name,
-          sortName: data.primaryArtist.sortName,
-          disambiguation: data.primaryArtist.disambiguation,
-          countryCode: data.primaryArtist.countryCode,
-          beginDate: data.primaryArtist.beginDate,
-          endDate: data.primaryArtist.endDate,
-          lastSyncedAt: now,
+          ...(data.primaryArtist.sortName !== null && {
+            sortName: data.primaryArtist.sortName,
+          }),
         },
       });
 

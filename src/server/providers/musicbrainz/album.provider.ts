@@ -8,24 +8,17 @@ import {
   mapMusicBrainzReleaseGroupSearchResult,
   type AlbumSearchResult,
 } from "./album.mapper";
-import { AlbumCatalogProvider } from "./album-catalog.provider";
-
-export interface AlbumSearchResponse {
-  count: number;
-  offset: number;
-  results: AlbumSearchResult[];
-}
-
-export interface AlbumSearchOptions {
-  limit?: number;
-  offset?: number;
-}
+import type {
+  AlbumCatalogProvider,
+  AlbumCatalogSearchOptions,
+  AlbumCatalogSearchResponse,
+} from "./album-catalog.provider";
 
 export class MusicBrainzAlbumProvider implements AlbumCatalogProvider {
   async searchAlbums(
     query: string,
-    options: AlbumSearchOptions = {},
-  ): Promise<AlbumSearchResponse> {
+    options: AlbumCatalogSearchOptions = {},
+  ): Promise<AlbumCatalogSearchResponse> {
     const normalizedQuery = query.trim();
 
     if (!normalizedQuery) {
@@ -35,8 +28,13 @@ export class MusicBrainzAlbumProvider implements AlbumCatalogProvider {
     const limit = Math.min(Math.max(options.limit ?? 10, 1), 100);
     const offset = Math.max(options.offset ?? 0, 0);
 
+    const escapedQuery = normalizedQuery
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"');
+    const musicBrainzQuery = `releasegroup:"${escapedQuery}"`;
+
     const response = await musicBrainzGet<unknown>("release-group", {
-      query: normalizedQuery,
+      query: musicBrainzQuery,
       limit: String(limit),
       offset: String(offset),
     });

@@ -1,4 +1,4 @@
-import { AlbumCatalogData } from "@/server/domain/album";
+import type { AlbumCatalogData } from "@/server/domain/album";
 import type { MusicBrainzReleaseGroupDTO } from "./album.schemas";
 
 export interface AlbumSearchResult {
