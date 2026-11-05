@@ -2,85 +2,132 @@ import "server-only";
 
 import { prisma } from "@/server/db";
 import type { GenreBrowseItem } from "@/server/domain/genre";
+import {
+  canonicalizeGenres,
+  SOUNDSCAPE_GENRES,
+} from "@/server/domain/genre-taxonomy";
 import type { GenreDetail, GenreRepository } from "./genre.repository";
 
-function normalizeGenre(name: string): { name: string; slug: string } | null {
+type NormalizedGenre = { name: string; slug: string };
+
+function normalizeGenre(name: string): NormalizedGenre | null {
   const normalized = name.trim().replace(/\s+/g, " ");
   if (!normalized || normalized.length > 80) return null;
+
   const slug = normalized
     .toLocaleLowerCase("en-US")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+
   return slug ? { name: normalized, slug } : null;
 }
 
-function normalizeGenres(names: string[]) {
-  const unique = new Map<string, { name: string; slug: string }>();
+function normalizeGenres(names: string[]): NormalizedGenre[] {
+  const unique = new Map<string, NormalizedGenre>();
+
   for (const name of names) {
     const genre = normalizeGenre(name);
     if (genre) unique.set(genre.slug, genre);
   }
+
   return [...unique.values()];
 }
 
 export class PrismaGenreRepository implements GenreRepository {
   async syncGenreCatalog(names: string[]): Promise<void> {
-    const genres = normalizeGenres(names);
+    const genres = normalizeGenres(canonicalizeGenres(names));
     if (genres.length === 0) {
       throw new Error(
         "Refusing to replace the genre catalog with an empty list",
       );
     }
 
-    const slugs = genres.map(({ slug }) => slug);
-    await prisma.$transaction(async (tx) => {
-      for (const genre of genres) {
-        await tx.genre.upsert({
-          where: { slug: genre.slug },
-          create: genre,
-          update: { name: genre.name },
-        });
-      }
+    // Use the full local allowlist for cleanup, not the latest upstream response.
+    // A partial provider response must never delete still-valid genres and their
+    // artist/album associations.
+    const approvedSlugs = SOUNDSCAPE_GENRES.map((name) => normalizeGenre(name))
+      .filter((genre): genre is NormalizedGenre => genre !== null)
+      .map(({ slug }) => slug);
 
-      // Remove legacy free-form tags that are not part of MusicBrainz' curated taxonomy.
-      await tx.genre.deleteMany({ where: { slug: { notIn: slugs } } });
+    await prisma.$transaction(async (tx) => {
+      // One bulk insert avoids a long sequence of interactive-transaction upserts.
+      await tx.genre.createMany({ data: genres, skipDuplicates: true });
+
+      // Remove only values outside the permanent SoundScape allowlist. Do not
+      // delete an approved genre merely because it was absent from one upstream
+      // response: that would cascade-delete valid artist/album associations.
+      await tx.genre.deleteMany({
+        where: { slug: { notIn: approvedSlugs } },
+      });
     });
   }
 
   async syncArtistGenres(artistId: string, names: string[]): Promise<void> {
-    await prisma.$transaction(async (tx) => {
-      await tx.artistGenre.deleteMany({ where: { artistId } });
-      for (const genreData of normalizeGenres(names)) {
-        const genre = await tx.genre.upsert({
-          where: { slug: genreData.slug },
-          create: genreData,
-          update: { name: genreData.name },
-        });
-        await tx.artistGenre.upsert({
-          where: { artistId_genreId: { artistId, genreId: genre.id } },
-          create: { artistId, genreId: genre.id },
-          update: {},
-        });
-      }
+    await this.syncEntityGenres({
+      entity: "artist",
+      entityId: artistId,
+      names,
     });
   }
 
   async syncAlbumGenres(albumId: string, names: string[]): Promise<void> {
+    await this.syncEntityGenres({
+      entity: "album",
+      entityId: albumId,
+      names,
+    });
+  }
+
+  private async syncEntityGenres(input: {
+    entity: "artist" | "album";
+    entityId: string;
+    names: string[];
+  }): Promise<void> {
+    const genres = normalizeGenres(canonicalizeGenres(input.names));
+    const isArtist = input.entity === "artist";
+
     await prisma.$transaction(async (tx) => {
-      await tx.albumGenre.deleteMany({ where: { albumId } });
-      for (const genreData of normalizeGenres(names)) {
-        const genre = await tx.genre.upsert({
-          where: { slug: genreData.slug },
-          create: genreData,
-          update: { name: genreData.name },
+      if (genres.length > 0) {
+        await tx.genre.createMany({ data: genres, skipDuplicates: true });
+      }
+
+      const genreRecords = genres.length
+        ? await tx.genre.findMany({
+            where: { slug: { in: genres.map(({ slug }) => slug) } },
+            select: { id: true, slug: true },
+          })
+        : [];
+
+      if (genreRecords.length !== genres.length) {
+        throw new Error("Failed to resolve all normalized genres");
+      }
+
+      if (isArtist) {
+        await tx.artistGenre.deleteMany({
+          where: { artistId: input.entityId },
         });
-        await tx.albumGenre.upsert({
-          where: { albumId_genreId: { albumId, genreId: genre.id } },
-          create: { albumId, genreId: genre.id },
-          update: {},
-        });
+        if (genreRecords.length > 0) {
+          await tx.artistGenre.createMany({
+            data: genreRecords.map(({ id }) => ({
+              artistId: input.entityId,
+              genreId: id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      } else {
+        await tx.albumGenre.deleteMany({ where: { albumId: input.entityId } });
+        if (genreRecords.length > 0) {
+          await tx.albumGenre.createMany({
+            data: genreRecords.map(({ id }) => ({
+              albumId: input.entityId,
+              genreId: id,
+            })),
+            skipDuplicates: true,
+          });
+        }
       }
     });
   }
@@ -135,6 +182,7 @@ export class PrismaGenreRepository implements GenreRepository {
       },
     });
     if (!record) return null;
+
     return {
       genre: {
         id: record.id,
