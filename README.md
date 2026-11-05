@@ -83,3 +83,7 @@ The MusicBrainz HTTP client applies the configured request interval, timeout, bo
 The `/library` page lists saved artists and albums. Artist and album detail pages include an add/remove favorite action; saved items can also be removed directly from the library. Mutations run through server actions and the Favorite application service.
 
 Until authentication is implemented as the final Phase 3 increment, the application uses one local workspace owner. Development defaults to `local-library`; set `SOUNDSCAPE_LIBRARY_USER_ID` explicitly in production. This is a single shared workspace, not a visitor-specific anonymous identity. The future auth adapter will resolve the current user server-side and pass its ID to the existing services.
+
+## Collections foundation
+
+The Phase 3 Collections foundation adds user-owned collections that can contain artists and albums together. Collection persistence and application services are in place; the collection management UI is the next implementation slice. Authentication remains deferred until the end of Phase 3.

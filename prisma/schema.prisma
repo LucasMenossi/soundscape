@@ -22,6 +22,7 @@ model Artist {
 
   albums   Album[]              @relation("PrimaryArtistAlbums")
   favorites Favorite[]
+  collectionItems CollectionItem[]
   genres   ArtistGenre[]
   outgoing ArtistRelationship[] @relation("SourceArtist")
   incoming ArtistRelationship[] @relation("TargetArtist")
@@ -45,6 +46,7 @@ model Album {
 
   genres AlbumGenre[]
   favorites Favorite[]
+  collectionItems CollectionItem[]
 
   @@index([title])
   @@index([primaryArtistId])
@@ -120,6 +122,7 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   favorites Favorite[]
+  collections Collection[]
 
   @@map("users")
 }
@@ -140,4 +143,43 @@ model Favorite {
   @@unique([userId, albumId])
   @@index([userId, createdAt])
   @@map("favorites")
+}
+
+enum CollectionItemEntityType {
+  ARTIST
+  ALBUM
+}
+
+model Collection {
+  id          String           @id @default(cuid())
+  userId      String
+  name        String           @db.VarChar(80)
+  description String?          @db.VarChar(500)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CollectionItem[]
+
+  @@index([userId, updatedAt])
+  @@map("collections")
+}
+
+model CollectionItem {
+  id           String                   @id @default(cuid())
+  collectionId String
+  entityType   CollectionItemEntityType
+  artistId     String?
+  albumId      String?
+  position     Int                      @default(0)
+  addedAt      DateTime                 @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  artist     Artist?    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  album      Album?     @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, artistId])
+  @@unique([collectionId, albumId])
+  @@index([collectionId, position, addedAt])
+  @@map("collection_items")
 }

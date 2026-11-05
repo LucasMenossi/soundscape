@@ -71,3 +71,12 @@ Exit validation still required: local browser walkthrough, empty/error-state rev
 - Artist relationship presentation and related-artist recommendations.
 - Similarity/recommendation algorithms.
 - Mood discovery, listening history, playback, streaming, and social features.
+
+### Phase 3 — Collections foundation slice
+
+- Collection persistence scoped to the owning user.
+- Collections can contain artists and albums in one ordered item list.
+- Application service supports create, update, delete, list, detail, add item, and remove item.
+- Database constraints prevent duplicate catalog items per collection and enforce exactly one catalog target per item.
+- Collection CRUD UI and item-management UI remain the next slice.
+- Authentication remains the final Phase 3 increment.
