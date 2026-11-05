@@ -21,7 +21,7 @@ import { artistService } from "@/server/services/artist-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
 import { tagService } from "@/server/services/tag-service.instance";
 import { favoriteService } from "@/server/services/favorite-service.instance";
-import { getLibraryUserId } from "@/server/services/library-user";
+import { getOptionalCurrentUser } from "@/lib/auth/current-user";
 import { collectionService } from "@/server/services/collection-service.instance";
 
 interface ArtistPageProps {
@@ -52,15 +52,17 @@ export default async function ArtistPage({
   const artist = await artistService.getArtistById(artistId);
   if (!artist) notFound();
 
-  const libraryUserId = await getLibraryUserId();
-  const [isFavorite, collections] = await Promise.all([
-    favoriteService.hasFavorite({
-      userId: libraryUserId,
-      entityType: "ARTIST",
-      entityId: artist.id,
-    }),
-    collectionService.listCollections(libraryUserId),
-  ]);
+  const currentUser = await getOptionalCurrentUser();
+  const [isFavorite, collections] = currentUser
+    ? await Promise.all([
+        favoriteService.hasFavorite({
+          userId: currentUser.id,
+          entityType: "ARTIST",
+          entityId: artist.id,
+        }),
+        collectionService.listCollections(currentUser.id),
+      ])
+    : [false, []];
 
   const discography = await albumService.getAlbumsByArtistPage(
     artist.id,
@@ -123,20 +125,29 @@ export default async function ArtistPage({
             {artist.name}
           </h1>
           <div className="mt-6">
-            <div className="flex flex-wrap items-start gap-3">
-              <FavoriteButton
-                entityId={artist.id}
-                entityType="ARTIST"
-                isFavorite={isFavorite}
-                returnTo={`/artists/${artist.id}`}
-              />
-              <AddToCollectionForm
-                collections={collections}
-                entityId={artist.id}
-                entityType="ARTIST"
-                returnTo={`/artists/${artist.id}`}
-              />
-            </div>
+            {currentUser ? (
+              <div className="flex flex-wrap items-start gap-3">
+                <FavoriteButton
+                  entityId={artist.id}
+                  entityType="ARTIST"
+                  isFavorite={isFavorite}
+                  returnTo={`/artists/${artist.id}`}
+                />
+                <AddToCollectionForm
+                  collections={collections}
+                  entityId={artist.id}
+                  entityType="ARTIST"
+                  returnTo={`/artists/${artist.id}`}
+                />
+              </div>
+            ) : (
+              <Link
+                href={`/sign-in?callbackURL=${encodeURIComponent(`/artists/${artist.id}`)}`}
+                className="inline-flex h-9 items-center justify-center rounded-full border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Sign in to save this artist
+              </Link>
+            )}
           </div>
           {artist.disambiguation && (
             <p className="mt-4 max-w-2xl text-base text-muted-foreground">

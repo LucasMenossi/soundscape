@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { CreateCollectionForm } from "@/components/collections/create-collection-form";
 import { collectionService } from "@/server/services/collection-service.instance";
-import { getLibraryUserId } from "@/server/services/library-user";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -21,7 +21,7 @@ export const metadata = {
 };
 
 export default async function CollectionsPage() {
-  const userId = await getLibraryUserId();
+  const { id: userId } = await requireCurrentUser();
   const collections = await collectionService.listCollections(userId);
 
   return (

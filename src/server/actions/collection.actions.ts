@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { collectionService } from "@/server/services/collection-service.instance";
 import { CollectionItemAlreadyExistsError } from "@/server/services/collection.service";
-import { getLibraryUserId } from "@/server/services/library-user";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 
 const idSchema = z.string().trim().min(1).max(128);
 const nameSchema = z
@@ -28,7 +28,7 @@ export async function createCollectionAction(
   const description = descriptionSchema.parse(
     readText(formData, "description"),
   );
-  const userId = await getLibraryUserId();
+  const { id: userId } = await requireCurrentUser();
   const collection = await collectionService.createCollection({
     userId,
     name,
@@ -46,7 +46,7 @@ export async function updateCollectionAction(
   const description = descriptionSchema.parse(
     readText(formData, "description"),
   );
-  const userId = await getLibraryUserId();
+  const { id: userId } = await requireCurrentUser();
   const collection = await collectionService.updateCollection({
     userId,
     collectionId,
@@ -63,7 +63,7 @@ export async function deleteCollectionAction(
   formData: FormData,
 ): Promise<void> {
   const collectionId = idSchema.parse(readText(formData, "collectionId"));
-  const userId = await getLibraryUserId();
+  const { id: userId } = await requireCurrentUser();
   await collectionService.deleteCollection({ userId, collectionId });
   revalidatePath("/collections");
   redirect("/collections");
@@ -88,7 +88,7 @@ export async function addCollectionItemAction(
       .string()
       .regex(/^\/(artists|albums)\/[a-zA-Z0-9_-]+$/)
       .parse(readText(formData, "returnTo"));
-    const userId = await getLibraryUserId();
+    const { id: userId } = await requireCurrentUser();
     await collectionService.addItem({
       userId,
       collectionId,
@@ -123,7 +123,7 @@ export async function removeCollectionItemAction(
   const entityType = z
     .enum(["ARTIST", "ALBUM"])
     .parse(readText(formData, "entityType"));
-  const userId = await getLibraryUserId();
+  const { id: userId } = await requireCurrentUser();
   await collectionService.removeItem({
     userId,
     collectionId,

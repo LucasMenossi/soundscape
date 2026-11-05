@@ -5,7 +5,7 @@ import { albumService } from "@/server/services/album-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
 import { tagService } from "@/server/services/tag-service.instance";
 import { favoriteService } from "@/server/services/favorite-service.instance";
-import { getLibraryUserId } from "@/server/services/library-user";
+import { getOptionalCurrentUser } from "@/lib/auth/current-user";
 import { collectionService } from "@/server/services/collection-service.instance";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/library/favorite-button";
@@ -30,15 +30,17 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
   const { albumId } = await params;
   const album = await albumService.getAlbumWithPrimaryArtist(albumId);
   if (!album) notFound();
-  const libraryUserId = await getLibraryUserId();
-  const [isFavorite, collections] = await Promise.all([
-    favoriteService.hasFavorite({
-      userId: libraryUserId,
-      entityType: "ALBUM",
-      entityId: album.id,
-    }),
-    collectionService.listCollections(libraryUserId),
-  ]);
+  const currentUser = await getOptionalCurrentUser();
+  const [isFavorite, collections] = currentUser
+    ? await Promise.all([
+        favoriteService.hasFavorite({
+          userId: currentUser.id,
+          entityType: "ALBUM",
+          entityId: album.id,
+        }),
+        collectionService.listCollections(currentUser.id),
+      ])
+    : [false, []];
   try {
     await genreService.syncAlbumGenres(
       album.id,
@@ -91,20 +93,29 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
               {album.title}
             </h1>
             <div className="mt-6">
-              <div className="flex flex-wrap items-start gap-3">
-                <FavoriteButton
-                  entityId={album.id}
-                  entityType="ALBUM"
-                  isFavorite={isFavorite}
-                  returnTo={`/albums/${album.id}`}
-                />
-                <AddToCollectionForm
-                  collections={collections}
-                  entityId={album.id}
-                  entityType="ALBUM"
-                  returnTo={`/albums/${album.id}`}
-                />
-              </div>
+              {currentUser ? (
+                <div className="flex flex-wrap items-start gap-3">
+                  <FavoriteButton
+                    entityId={album.id}
+                    entityType="ALBUM"
+                    isFavorite={isFavorite}
+                    returnTo={`/albums/${album.id}`}
+                  />
+                  <AddToCollectionForm
+                    collections={collections}
+                    entityId={album.id}
+                    entityType="ALBUM"
+                    returnTo={`/albums/${album.id}`}
+                  />
+                </div>
+              ) : (
+                <Link
+                  href={`/sign-in?callbackURL=${encodeURIComponent(`/albums/${album.id}`)}`}
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  Sign in to save this album
+                </Link>
+              )}
             </div>
             <Link
               href={`/artists/${album.primaryArtist.id}`}

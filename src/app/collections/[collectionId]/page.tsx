@@ -12,7 +12,7 @@ import {
   updateCollectionAction,
 } from "@/server/actions/collection.actions";
 import { collectionService } from "@/server/services/collection-service.instance";
-import { getLibraryUserId } from "@/server/services/library-user";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 
 interface CollectionPageProps {
   params: Promise<{ collectionId: string }>;
@@ -20,7 +20,7 @@ interface CollectionPageProps {
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { collectionId } = await params;
-  const userId = await getLibraryUserId();
+  const { id: userId } = await requireCurrentUser();
   const collection = await collectionService.getCollection({
     userId,
     collectionId,

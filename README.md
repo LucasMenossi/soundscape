@@ -82,7 +82,7 @@ The MusicBrainz HTTP client applies the configured request interval, timeout, bo
 
 The `/library` page lists saved artists and albums. Artist and album detail pages include an add/remove favorite action; saved items can also be removed directly from the library. Mutations run through server actions and the Favorite application service.
 
-Until authentication is implemented as the final Phase 3 increment, the application uses one local workspace owner. Development defaults to `local-library`; set `SOUNDSCAPE_LIBRARY_USER_ID` explicitly in production. This is a single shared workspace, not a visitor-specific anonymous identity. The future auth adapter will resolve the current user server-side and pass its ID to the existing services.
+Authentication uses Better Auth with email/password and immediate sign-in after registration. Email verification and email delivery are intentionally out of scope for the MVP. The current user is resolved from the server-side session for every personal page and mutation. Configure `AUTH_SECRET`, `APP_URL`, and `AUTH_TRUSTED_ORIGINS`. The previous `local-library` workspace row is preserved as an unassigned legacy record; it is not transferred to the first registrant.
 
 ## Collections foundation
 
@@ -98,3 +98,22 @@ MusicBrainz partial dates are displayed according to their available precision: 
 ### Collection picker layout stability
 
 The collection picker is anchored to its trigger using a relatively positioned, fixed-width wrapper. Its list opens as an absolutely positioned overlay, so opening it does not push the artist/album metadata or other page content down. Feedback remains handled by Sonner and does not occupy inline layout space.
+
+
+## Architecture decisions
+
+- [ADR 0005 — Authentication strategy](docs/adr/0005-authentication-strategy.md)
+- [Authentication implementation plan](docs/13-auth-implementation-plan.md)
+
+
+## Authentication setup
+
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and set `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET` (at least 32 random characters), `APP_URL`, and `AUTH_TRUSTED_ORIGINS`.
+3. Apply the migration with `npm run db:deploy` (or `npm run db:migrate` locally), then run `npm run db:generate`.
+4. Start the app. Registration does not require an email service.
+
+Authentication endpoints are served at `/api/auth/*`. Public artist and album pages remain available without a session. `/library`, `/collections`, and their mutations require an authenticated user.
+
+
+See [Authentication implementation](docs/14-authentication-implementation.md) for the implementation status, environment setup, migration notes, and verification checklist.

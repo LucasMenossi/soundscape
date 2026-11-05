@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { favoriteService } from "@/server/services/favorite-service.instance";
-import { getLibraryUserId } from "@/server/services/library-user";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 
 const favoriteInputSchema = z.object({
   entityType: z.enum(["ARTIST", "ALBUM"]),
@@ -18,8 +18,12 @@ export async function toggleFavoriteAction(formData: FormData): Promise<void> {
     entityId: formData.get("entityId"),
     returnTo: formData.get("returnTo") ?? "/library",
   });
-  const userId = await getLibraryUserId();
-  const favoriteInput = { userId, entityType: input.entityType, entityId: input.entityId };
+  const { id: userId } = await requireCurrentUser();
+  const favoriteInput = {
+    userId,
+    entityType: input.entityType,
+    entityId: input.entityId,
+  };
 
   if (await favoriteService.hasFavorite(favoriteInput)) {
     await favoriteService.removeFavorite(favoriteInput);

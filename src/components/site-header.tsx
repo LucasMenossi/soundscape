@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { AudioLines, FolderHeart, Heart, Search, Tags } from "lucide-react";
-export function SiteHeader() {
+
+import { SignOutButton } from "@/components/auth/sign-out-button";
+import { getOptionalCurrentUser } from "@/lib/auth/current-user";
+
+export async function SiteHeader() {
+  const user = await getOptionalCurrentUser();
+
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
@@ -40,6 +46,16 @@ export function SiteHeader() {
           >
             <Search className="size-4" /> Explore catalog
           </Link>
+          {user ? (
+            <SignOutButton />
+          ) : (
+            <Link
+              href="/sign-in"
+              className="inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium text-primary transition-colors hover:bg-muted"
+            >
+              Sign in
+            </Link>
+          )}
         </nav>
       </div>
     </header>
