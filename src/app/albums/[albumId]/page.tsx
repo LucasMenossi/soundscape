@@ -6,19 +6,15 @@ import { genreService } from "@/server/services/genre-service.instance";
 import { tagService } from "@/server/services/tag-service.instance";
 import { favoriteService } from "@/server/services/favorite-service.instance";
 import { getLibraryUserId } from "@/server/services/library-user";
+import { collectionService } from "@/server/services/collection-service.instance";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/library/favorite-button";
+import { AddToCollectionForm } from "@/components/collections/add-to-collection-form";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { formatMusicBrainzDate } from "@/lib/format-musicbrainz-date";
 interface AlbumPageProps {
   params: Promise<{ albumId: string }>;
-}
-function formatReleaseDate(date: string | null): string | null {
-  if (!date) return null;
-  const [year, month, day] = date.split("-");
-  if (!month) return year;
-  if (!day) return `${month}/${year}`;
-  return `${day}/${month}/${year}`;
 }
 export async function generateMetadata({ params }: AlbumPageProps) {
   const { albumId } = await params;
@@ -35,11 +31,14 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
   const album = await albumService.getAlbumWithPrimaryArtist(albumId);
   if (!album) notFound();
   const libraryUserId = await getLibraryUserId();
-  const isFavorite = await favoriteService.hasFavorite({
-    userId: libraryUserId,
-    entityType: "ALBUM",
-    entityId: album.id,
-  });
+  const [isFavorite, collections] = await Promise.all([
+    favoriteService.hasFavorite({
+      userId: libraryUserId,
+      entityType: "ALBUM",
+      entityId: album.id,
+    }),
+    collectionService.listCollections(libraryUserId),
+  ]);
   try {
     await genreService.syncAlbumGenres(
       album.id,
@@ -62,7 +61,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
       return [];
     }),
   ]);
-  const releaseDate = formatReleaseDate(album.firstReleaseDate);
+  const releaseDate = formatMusicBrainzDate(album.firstReleaseDate);
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <Link
@@ -92,7 +91,20 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
               {album.title}
             </h1>
             <div className="mt-6">
-              <FavoriteButton entityId={album.id} entityType="ALBUM" isFavorite={isFavorite} returnTo={`/albums/${album.id}`} />
+              <div className="flex flex-wrap items-start gap-3">
+                <FavoriteButton
+                  entityId={album.id}
+                  entityType="ALBUM"
+                  isFavorite={isFavorite}
+                  returnTo={`/albums/${album.id}`}
+                />
+                <AddToCollectionForm
+                  collections={collections}
+                  entityId={album.id}
+                  entityType="ALBUM"
+                  returnTo={`/albums/${album.id}`}
+                />
+              </div>
             </div>
             <Link
               href={`/artists/${album.primaryArtist.id}`}
@@ -127,10 +139,14 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
         )}
         {albumTags.length > 0 && (
           <div className="mt-5">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Community tags</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Community tags
+            </p>
             <div className="flex flex-wrap gap-2">
               {albumTags.slice(0, 12).map((tag) => (
-                <Badge key={tag} variant="outline" className="font-normal">{tag}</Badge>
+                <Badge key={tag} variant="outline" className="font-normal">
+                  {tag}
+                </Badge>
               ))}
             </div>
           </div>

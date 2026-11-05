@@ -9,16 +9,20 @@
 - Added collection and item domain types, repository contract, Prisma repository, application service, and composition root.
 - Added service tests for input validation, user-scoped deletion, ownership checks, duplicate prevention, and item creation.
 - Collections are private to their owner; no public sharing or visibility model is included.
-- Item ordering is represented by a `position` field. Reordering use cases and UI are deferred to the collection experience slice.
+- Item ordering is represented by a `position` field. Reordering use cases and UI remain deferred.
+
+## Follow-up experience slice
+
+The CRUD and item-management UI is documented in `11-phase-3-collections-experience.md`. The current application includes collection list/detail routes, create/edit/delete actions, and add/remove item flows.
 
 ## Deliberately not included
 
-- No collection CRUD UI, collection detail route, or item management UI yet.
 - No public collections, sharing, collaboration, cover customization, or smart/dynamic collections.
+- No drag-and-drop reordering; the `position` field is retained for a later increment.
 - No authentication, credentials, sessions, or auth provider.
 - No temporary or anonymous identity mechanism. Services receive `userId` explicitly, consistent with the Personal Library foundation.
 
-The next slice will add collection creation/editing/deletion and adding/removing catalog items through the application service. The authentication integration remains the final Phase 3 increment.
+Authentication integration remains the final Phase 3 increment.
 
 ## Database migration
 

@@ -86,4 +86,15 @@ Until authentication is implemented as the final Phase 3 increment, the applicat
 
 ## Collections foundation
 
-The Phase 3 Collections foundation adds user-owned collections that can contain artists and albums together. Collection persistence and application services are in place; the collection management UI is the next implementation slice. Authentication remains deferred until the end of Phase 3.
+The Phase 3 Collections experience adds `/collections` and `/collections/[collectionId]` for creating, editing, deleting, and viewing private collections. Artists and albums can be added from their catalog detail pages and removed from collection detail. Collection actions run through server actions and the Collection application service. Authentication remains deferred until the end of Phase 3.
+
+Collection actions use a compact collection picker. Success, duplicate-item information, and unexpected failures are presented with shadcn Sonner toasts, keeping feedback outside the page layout.
+
+### Date formatting
+
+MusicBrainz partial dates are displayed according to their available precision: `YYYY` remains a year, `YYYY-MM` becomes a month and year, and `YYYY-MM-DD` becomes a readable full date. Artist life-span dates and album first-release dates share the same formatter, without timezone shifts.
+
+
+### Collection picker layout stability
+
+The collection picker is anchored to its trigger using a relatively positioned, fixed-width wrapper. Its list opens as an absolutely positioned overlay, so opening it does not push the artist/album metadata or other page content down. Feedback remains handled by Sonner and does not occupy inline layout space.

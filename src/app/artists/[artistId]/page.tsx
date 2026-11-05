@@ -12,14 +12,17 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/library/favorite-button";
+import { AddToCollectionForm } from "@/components/collections/add-to-collection-form";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { formatMusicBrainzDate } from "@/lib/format-musicbrainz-date";
 import { albumService } from "@/server/services/album-service.instance";
 import { artistService } from "@/server/services/artist-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
 import { tagService } from "@/server/services/tag-service.instance";
 import { favoriteService } from "@/server/services/favorite-service.instance";
 import { getLibraryUserId } from "@/server/services/library-user";
+import { collectionService } from "@/server/services/collection-service.instance";
 
 interface ArtistPageProps {
   params: Promise<{ artistId: string }>;
@@ -50,11 +53,14 @@ export default async function ArtistPage({
   if (!artist) notFound();
 
   const libraryUserId = await getLibraryUserId();
-  const isFavorite = await favoriteService.hasFavorite({
-    userId: libraryUserId,
-    entityType: "ARTIST",
-    entityId: artist.id,
-  });
+  const [isFavorite, collections] = await Promise.all([
+    favoriteService.hasFavorite({
+      userId: libraryUserId,
+      entityType: "ARTIST",
+      entityId: artist.id,
+    }),
+    collectionService.listCollections(libraryUserId),
+  ]);
 
   const discography = await albumService.getAlbumsByArtistPage(
     artist.id,
@@ -85,8 +91,12 @@ export default async function ArtistPage({
   ]);
 
   const activeYears = [
-    artist.beginDate,
-    artist.endDate ?? (artist.beginDate ? "Present" : null),
+    formatMusicBrainzDate(artist.beginDate),
+    artist.endDate
+      ? formatMusicBrainzDate(artist.endDate)
+      : artist.beginDate
+        ? "Present"
+        : null,
   ]
     .filter(Boolean)
     .join(" – ");
@@ -113,7 +123,20 @@ export default async function ArtistPage({
             {artist.name}
           </h1>
           <div className="mt-6">
-            <FavoriteButton entityId={artist.id} entityType="ARTIST" isFavorite={isFavorite} returnTo={`/artists/${artist.id}`} />
+            <div className="flex flex-wrap items-start gap-3">
+              <FavoriteButton
+                entityId={artist.id}
+                entityType="ARTIST"
+                isFavorite={isFavorite}
+                returnTo={`/artists/${artist.id}`}
+              />
+              <AddToCollectionForm
+                collections={collections}
+                entityId={artist.id}
+                entityType="ARTIST"
+                returnTo={`/artists/${artist.id}`}
+              />
+            </div>
           </div>
           {artist.disambiguation && (
             <p className="mt-4 max-w-2xl text-base text-muted-foreground">
@@ -184,12 +207,17 @@ export default async function ArtistPage({
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {albums.map((album, index) => (
               <li key={album.id}>
-                <Link href={`/albums/${album.id}`} className="group block h-full">
+                <Link
+                  href={`/albums/${album.id}`}
+                  className="group block h-full"
+                >
                   <Card className="h-full overflow-hidden transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-lg group-hover:shadow-primary/5">
                     <div className="relative flex aspect-[1.35/1] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,oklch(0.32_0.06_160/55%),oklch(0.18_0.02_265))]">
                       <Disc3 className="size-16 text-foreground/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
                       <span className="absolute left-4 top-4 font-mono text-xs text-foreground/45">
-                        {String((page - 1) * discography.pageSize + index + 1).padStart(2, "0")}
+                        {String(
+                          (page - 1) * discography.pageSize + index + 1,
+                        ).padStart(2, "0")}
                       </span>
                       <span className="absolute bottom-4 right-4 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-[.16em] text-white/65">
                         SoundScape catalog
@@ -201,7 +229,8 @@ export default async function ArtistPage({
                       </h3>
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <p className="text-sm text-muted-foreground">
-                          {album.firstReleaseDate?.slice(0, 4) ?? "Year unknown"}
+                          {album.firstReleaseDate?.slice(0, 4) ??
+                            "Year unknown"}
                         </p>
                         <div className="flex items-center gap-2">
                           {album.albumType && (
@@ -227,13 +256,21 @@ export default async function ArtistPage({
         )}
 
         {discography.total > discography.pageSize && (
-          <nav aria-label="Discography pagination" className="mt-6 flex items-center justify-between">
+          <nav
+            aria-label="Discography pagination"
+            className="mt-6 flex items-center justify-between"
+          >
             <p className="text-xs text-muted-foreground">
-              Showing {(page - 1) * discography.pageSize + 1}–{Math.min(page * discography.pageSize, discography.total)} of {discography.total} studio albums
+              Showing {(page - 1) * discography.pageSize + 1}–
+              {Math.min(page * discography.pageSize, discography.total)} of{" "}
+              {discography.total} studio albums
             </p>
             <div className="flex gap-2">
               {page > 1 ? (
-                <Link href={`/artists/${artist.id}?page=${page - 1}`} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                <Link
+                  href={`/artists/${artist.id}?page=${page - 1}`}
+                  className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted"
+                >
                   <ChevronLeft className="size-4" /> Previous
                 </Link>
               ) : (
@@ -242,7 +279,10 @@ export default async function ArtistPage({
                 </span>
               )}
               {page * discography.pageSize < discography.total ? (
-                <Link href={`/artists/${artist.id}?page=${page + 1}`} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                <Link
+                  href={`/artists/${artist.id}?page=${page + 1}`}
+                  className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted"
+                >
                   Next <ChevronRight className="size-4" />
                 </Link>
               ) : (
