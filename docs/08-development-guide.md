@@ -41,3 +41,12 @@ npm run test
 - Do not expose unreviewed third-party artwork.
 - Log optional enrichment failures while preserving the core catalog page.
 - Add tests alongside each behavior change.
+
+
+## Personal curation implementation notes
+
+- User-scoped application services receive an explicit `userId`; they do not read cookies or depend on an auth provider.
+- The `users` table currently contains only a stable ID and timestamps. It is not an authentication implementation.
+- Favorites are persisted with exactly one catalog target (`artistId` or `albumId`), checked in PostgreSQL and constrained to one favorite per user/entity.
+- Do not create anonymous users or expose user-scoped operations through public routes before authentication is implemented.
+- When auth is added as the final Phase 3 slice, its server-side adapter must resolve the authenticated user ID and pass it into these services.
