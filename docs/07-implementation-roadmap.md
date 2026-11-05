@@ -39,12 +39,14 @@ Exit validation still required: local browser walkthrough, empty/error-state rev
 
 ## Phase 3 — Authentication and personal curation
 
-**Status: not started.**
+**Status: Personal Library experience implemented; Collections and authentication remain.**
 
-- Authentication.
-- Favorites and personal library.
-- Collection CRUD and item management.
-- Authorization at service/repository boundaries.
+- Personal Library page with separate artist and album sections.
+- Favorite and remove actions from artist and album detail pages.
+- User-scoped persistence through the Favorite application service and repository.
+- A single configured local workspace is used until authentication is implemented; it is not an authentication or anonymous-session mechanism.
+- Collection CRUD and item management remain next.
+- Authentication and authorization integration remain the final Phase 3 increment.
 
 ## Phase 4 — Artwork enablement
 

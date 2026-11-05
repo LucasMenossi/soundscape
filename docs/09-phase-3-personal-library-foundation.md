@@ -12,7 +12,7 @@
 ## Deliberately not included
 
 - No sign-up, sign-in, sign-out, credentials, sessions, OAuth, or auth provider.
-- No public API routes or UI actions for favorites.
+- The follow-up Personal Library slice adds server actions and UI for favorites.
 - No anonymous-user identity, browser-local fallback, or temporary session mechanism.
 - No collections yet; they follow the Personal Library experience.
 
@@ -33,3 +33,12 @@ npm run lint
 ```
 
 The migration adds `users`, `favorites`, the `FavoriteEntityType` enum, foreign keys, unique indexes, and a CHECK constraint. No existing catalog rows are modified.
+
+
+## Personal Library experience slice
+
+- Added `/library` with separate artist and album lists, saved counts, and empty states.
+- Added favorite toggles to artist and album detail pages and removal actions in the library.
+- All mutations use a server action and the existing FavoriteService; the browser never supplies an authenticated user identity.
+- Until authentication is delivered at the end of Phase 3, the app uses one configured local workspace ID (`SOUNDSCAPE_LIBRARY_USER_ID`). In development it defaults to `local-library`; production requires an explicit environment value. This is a single shared workspace, not per-visitor identity or authentication.
+- When auth is added, replace the local workspace resolver with a server-side current-user adapter without changing the favorite domain or repository contracts.

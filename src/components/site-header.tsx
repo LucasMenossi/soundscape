@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AudioLines, Search, Tags } from "lucide-react";
+import { AudioLines, Heart, Search, Tags } from "lucide-react";
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-xl">
@@ -13,6 +13,10 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-1">
+          <Link href="/library" className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            <Heart className="size-4" />
+            <span className="hidden sm:inline">My library</span>
+          </Link>
           <Link
             href="/genres"
             className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

@@ -76,3 +76,10 @@ Artist relationship synchronization and presentation are currently deferred. The
 ### MusicBrainz resilience
 
 The MusicBrainz HTTP client applies the configured request interval, timeout, bounded retries, exponential backoff with jitter, and `Retry-After` handling. HTTP `408`, `429`, `500`, `502`, `503`, and `504` are treated as retryable. Only successful parsed responses are cached.
+
+
+### Personal Library (Phase 3)
+
+The `/library` page lists saved artists and albums. Artist and album detail pages include an add/remove favorite action; saved items can also be removed directly from the library. Mutations run through server actions and the Favorite application service.
+
+Until authentication is implemented as the final Phase 3 increment, the application uses one local workspace owner. Development defaults to `local-library`; set `SOUNDSCAPE_LIBRARY_USER_ID` explicitly in production. This is a single shared workspace, not a visitor-specific anonymous identity. The future auth adapter will resolve the current user server-side and pass its ID to the existing services.

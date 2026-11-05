@@ -66,6 +66,25 @@ describe("FavoriteService", () => {
     expect(repository.findByUserId).not.toHaveBeenCalled();
   });
 
+  it("checks whether an entity is in the supplied user's library", async () => {
+    const repository = createRepository();
+    repository.exists.mockResolvedValue(true);
+    const service = new FavoriteService(repository);
+
+    await expect(
+      service.hasFavorite({
+        userId: "user-1",
+        entityType: "ALBUM",
+        entityId: "album-1",
+      }),
+    ).resolves.toBe(true);
+    expect(repository.exists).toHaveBeenCalledWith({
+      userId: "user-1",
+      entityType: "ALBUM",
+      entityId: "album-1",
+    });
+  });
+
   it("scopes removal to the supplied user", async () => {
     const repository = createRepository();
     repository.remove.mockResolvedValue(true);

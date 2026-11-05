@@ -11,12 +11,15 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { FavoriteButton } from "@/components/library/favorite-button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { albumService } from "@/server/services/album-service.instance";
 import { artistService } from "@/server/services/artist-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
 import { tagService } from "@/server/services/tag-service.instance";
+import { favoriteService } from "@/server/services/favorite-service.instance";
+import { getLibraryUserId } from "@/server/services/library-user";
 
 interface ArtistPageProps {
   params: Promise<{ artistId: string }>;
@@ -45,6 +48,13 @@ export default async function ArtistPage({
 
   const artist = await artistService.getArtistById(artistId);
   if (!artist) notFound();
+
+  const libraryUserId = await getLibraryUserId();
+  const isFavorite = await favoriteService.hasFavorite({
+    userId: libraryUserId,
+    entityType: "ARTIST",
+    entityId: artist.id,
+  });
 
   const discography = await albumService.getAlbumsByArtistPage(
     artist.id,
@@ -102,6 +112,9 @@ export default async function ArtistPage({
           <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[1.05] tracking-[-.045em] sm:text-7xl">
             {artist.name}
           </h1>
+          <div className="mt-6">
+            <FavoriteButton entityId={artist.id} entityType="ARTIST" isFavorite={isFavorite} returnTo={`/artists/${artist.id}`} />
+          </div>
           {artist.disambiguation && (
             <p className="mt-4 max-w-2xl text-base text-muted-foreground">
               {artist.disambiguation}

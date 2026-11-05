@@ -4,7 +4,10 @@ import { ArrowLeft, ArrowUpRight, Disc3, Mic2 } from "lucide-react";
 import { albumService } from "@/server/services/album-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
 import { tagService } from "@/server/services/tag-service.instance";
+import { favoriteService } from "@/server/services/favorite-service.instance";
+import { getLibraryUserId } from "@/server/services/library-user";
 import { Badge } from "@/components/ui/badge";
+import { FavoriteButton } from "@/components/library/favorite-button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 interface AlbumPageProps {
@@ -31,6 +34,12 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
   const { albumId } = await params;
   const album = await albumService.getAlbumWithPrimaryArtist(albumId);
   if (!album) notFound();
+  const libraryUserId = await getLibraryUserId();
+  const isFavorite = await favoriteService.hasFavorite({
+    userId: libraryUserId,
+    entityType: "ALBUM",
+    entityId: album.id,
+  });
   try {
     await genreService.syncAlbumGenres(
       album.id,
@@ -82,6 +91,9 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
             <h1 className="mt-6 text-5xl font-semibold leading-[1.05] tracking-[-.045em] sm:text-6xl">
               {album.title}
             </h1>
+            <div className="mt-6">
+              <FavoriteButton entityId={album.id} entityType="ALBUM" isFavorite={isFavorite} returnTo={`/albums/${album.id}`} />
+            </div>
             <Link
               href={`/artists/${album.primaryArtist.id}`}
               className="mt-5 inline-flex items-center gap-2 text-xl text-muted-foreground transition-colors hover:text-primary"

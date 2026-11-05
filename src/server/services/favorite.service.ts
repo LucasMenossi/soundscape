@@ -35,6 +35,14 @@ export class FavoriteService {
     return this.repository.findByUserId(idSchema.parse(userId));
   }
 
+  hasFavorite(input: {
+    userId: string;
+    entityType: FavoriteEntityType;
+    entityId: string;
+  }): Promise<boolean> {
+    return this.repository.exists(this.validateInput(input));
+  }
+
   private validateInput(input: {
     userId: string;
     entityType: FavoriteEntityType;
