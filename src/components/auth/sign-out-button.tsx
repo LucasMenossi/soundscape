@@ -29,8 +29,12 @@ export function SignOutButton() {
       size="sm"
       onClick={signOut}
       disabled={pending}
+      aria-label={pending ? "Signing out" : "Sign out"}
     >
-      <LogOut className="mr-2 size-4" /> {pending ? "Signing out…" : "Sign out"}
+      <LogOut className="size-4 sm:mr-2" />
+      <span className="hidden sm:inline">
+        {pending ? "Signing out…" : "Sign out"}
+      </span>
     </Button>
   );
 }

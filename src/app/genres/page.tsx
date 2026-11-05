@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Tags } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -9,8 +11,6 @@ export const metadata = {
   description:
     "Explore SoundScape’s curated music genres and the artists and albums connected to them.",
 };
-
-export const dynamic = "force-dynamic";
 
 export default async function GenresPage() {
   const genres = await genreService.listGenres();

@@ -20,7 +20,9 @@ interface CollectionPageProps {
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { collectionId } = await params;
-  const { id: userId } = await requireCurrentUser();
+  const { id: userId } = await requireCurrentUser(
+    `/collections/${collectionId}`,
+  );
   const collection = await collectionService.getCollection({
     userId,
     collectionId,

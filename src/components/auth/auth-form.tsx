@@ -13,6 +13,8 @@ interface AuthFormProps {
   mode: "sign-in" | "sign-up";
 }
 
+const fieldClassName = "grid gap-2 text-sm font-medium";
+
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,12 +74,13 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="grid gap-5">
       {mode === "sign-up" && (
-        <label className="block space-y-2 text-sm font-medium">
-          Name
+        <label className={fieldClassName}>
+          <span>Name</span>
           <Input
             autoComplete="name"
+            placeholder="Your name"
             required
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -85,22 +88,28 @@ export function AuthForm({ mode }: AuthFormProps) {
           />
         </label>
       )}
-      <label className="block space-y-2 text-sm font-medium">
-        Email
+
+      <label className={fieldClassName}>
+        <span>Email address</span>
         <Input
           type="email"
           autoComplete="email"
+          placeholder="you@example.com"
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
       </label>
-      <label className="block space-y-2 text-sm font-medium">
-        Password
+
+      <label className={fieldClassName}>
+        <span>Password</span>
         <Input
           type="password"
           autoComplete={
             mode === "sign-up" ? "new-password" : "current-password"
+          }
+          placeholder={
+            mode === "sign-up" ? "At least 8 characters" : "Your password"
           }
           required
           minLength={8}
@@ -109,17 +118,19 @@ export function AuthForm({ mode }: AuthFormProps) {
           onChange={(event) => setPassword(event.target.value)}
         />
         {mode === "sign-up" && (
-          <span className="block text-xs font-normal text-muted-foreground">
+          <span className="text-xs font-normal text-muted-foreground">
             Use between 8 and 128 characters.
           </span>
         )}
       </label>
+
       {mode === "sign-up" && (
-        <label className="block space-y-2 text-sm font-medium">
-          Confirm password
+        <label className={fieldClassName}>
+          <span>Confirm password</span>
           <Input
             type="password"
             autoComplete="new-password"
+            placeholder="Enter your password again"
             required
             minLength={8}
             maxLength={128}
@@ -128,25 +139,31 @@ export function AuthForm({ mode }: AuthFormProps) {
           />
         </label>
       )}
+
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
+        >
           {error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={isPending}>
+
+      <Button type="submit" className="mt-1 h-11 w-full" disabled={isPending}>
         {isPending
           ? "Please wait…"
           : mode === "sign-up"
             ? "Create account"
             : "Sign in"}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
+
+      <p className="pt-1 text-center text-sm text-muted-foreground">
         {mode === "sign-up"
           ? "Already have an account? "
           : "New to SoundScape? "}
         <Link
           className="font-medium text-primary hover:underline"
-          href={mode === "sign-up" ? "/sign-in" : "/sign-up"}
+          href={`${mode === "sign-up" ? "/sign-in" : "/sign-up"}?callbackURL=${encodeURIComponent(callbackURL)}`}
         >
           {mode === "sign-up" ? "Sign in" : "Create an account"}
         </Link>
@@ -161,7 +178,9 @@ function safeCallbackURL(value: string | null): string {
     !value.startsWith("/") ||
     value.startsWith("//") ||
     value.includes("\\")
-  )
+  ) {
     return "/library";
+  }
+
   return value;
 }

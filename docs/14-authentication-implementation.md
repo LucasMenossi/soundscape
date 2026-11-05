@@ -1,17 +1,17 @@
 # 14 — Authentication implementation
 
-**Status:** Initial Better Auth integration prepared. Dependency installation/lockfile refresh, Prisma Client generation, database migration, and runtime verification are still pending.
+**Status:** Better Auth integration is implemented. The local environment has successfully generated Prisma Client, applied the database migration, and completed sign-up/sign-in. The latest navigation and form UX refinements are included in this revision; run the full local validation suite before release.
 
 ## Implemented
 
 - Better Auth email/password authentication using the existing Prisma 7 client and PostgreSQL.
 - Email verification is disabled; sign-up establishes a session immediately.
 - No SMTP transport, email sender, verification template, or email confirmation page.
-- Sign-up and sign-in pages, sign-out control, and header authentication affordance.
+- Sign-up and sign-in pages, sign-out control, and session-aware header navigation. Anonymous visitors do not see Library or Collections links; authenticated visitors do not see Sign in or Sign up.
 - Better Auth API route at `/api/auth/*`.
 - Server-side `getOptionalCurrentUser()` and `requireCurrentUser()` adapters.
 - Public artist and album pages remain accessible anonymously; personal actions are shown only to authenticated users.
-- Library and collection pages plus favorite/collection server actions derive the user from the server session.
+- Library and collection pages plus favorite/collection server actions derive the user from the server session. Protected pages preserve their requested path in the sign-in `callbackURL`.
 - The shared `local-library` runtime resolver was removed.
 - Existing legacy workspace data remains unassigned; it is not transferred to the first registrant.
 
@@ -34,7 +34,7 @@ The Better Auth migration preserves the existing workspace row and its foreign k
 4. Register a new account and confirm the session is created immediately without sending an email.
 5. Sign out and sign in again with the new account.
 6. Confirm anonymous visitors can browse artist and album pages.
-7. Confirm anonymous visitors are redirected from `/library` and `/collections`.
+7. Confirm anonymous visitors are redirected from `/library` and `/collections`, then returned to the originally requested page after sign-in.
 8. Create two users and verify favorites and collections cannot be read or modified across users.
 9. Run lint, typecheck, unit tests, and a production build.
 

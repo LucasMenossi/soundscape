@@ -21,7 +21,7 @@ export const metadata = {
 };
 
 export default async function CollectionsPage() {
-  const { id: userId } = await requireCurrentUser();
+  const { id: userId } = await requireCurrentUser("/collections");
   const collections = await collectionService.listCollections(userId);
 
   return (

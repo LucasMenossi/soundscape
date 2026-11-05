@@ -24,8 +24,14 @@ export async function getOptionalCurrentUser(): Promise<CurrentUser | null> {
   };
 }
 
-export async function requireCurrentUser(): Promise<CurrentUser> {
+export async function requireCurrentUser(
+  returnTo = "/library",
+): Promise<CurrentUser> {
   const user = await getOptionalCurrentUser();
-  if (!user) redirect("/sign-in?callbackURL=%2Flibrary");
+
+  if (!user) {
+    redirect(`/sign-in?callbackURL=${encodeURIComponent(returnTo)}`);
+  }
+
   return user;
 }

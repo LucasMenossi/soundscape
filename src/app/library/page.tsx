@@ -44,7 +44,7 @@ function EmptyState({
 }
 
 export default async function LibraryPage() {
-  const { id: userId } = await requireCurrentUser();
+  const { id: userId } = await requireCurrentUser("/library");
   const favorites = await favoriteService.getLibrary(userId);
   const artists = favorites.filter(
     (favorite) => favorite.entityType === "ARTIST",

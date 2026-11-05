@@ -86,7 +86,7 @@ Authentication uses Better Auth with email/password and immediate sign-in after 
 
 ## Collections foundation
 
-The Phase 3 Collections experience adds `/collections` and `/collections/[collectionId]` for creating, editing, deleting, and viewing private collections. Artists and albums can be added from their catalog detail pages and removed from collection detail. Collection actions run through server actions and the Collection application service. Authentication remains deferred until the end of Phase 3.
+The Phase 3 Collections experience adds `/collections` and `/collections/[collectionId]` for creating, editing, deleting, and viewing private collections. Artists and albums can be added from their catalog detail pages and removed from collection detail. Collection actions run through server actions and the Collection application service. Both pages require an authenticated session; anonymous visitors are redirected to sign in.
 
 Collection actions use a compact collection picker. Success, duplicate-item information, and unexpected failures are presented with shadcn Sonner toasts, keeping feedback outside the page layout.
 
@@ -104,6 +104,7 @@ The collection picker is anchored to its trigger using a relatively positioned, 
 
 - [ADR 0005 — Authentication strategy](docs/adr/0005-authentication-strategy.md)
 - [Authentication implementation plan](docs/13-auth-implementation-plan.md)
+- [Authentication navigation and form UX](docs/15-auth-navigation-and-form-ux.md)
 
 
 ## Authentication setup
@@ -117,3 +118,8 @@ Authentication endpoints are served at `/api/auth/*`. Public artist and album pa
 
 
 See [Authentication implementation](docs/14-authentication-implementation.md) for the implementation status, environment setup, migration notes, and verification checklist.
+
+
+### Authentication-aware navigation and forms
+
+The header only shows **My library** and **Collections** to authenticated users. Anonymous visitors see the public catalog navigation and sign-in/sign-up actions. Authenticated users see personal navigation and sign out instead of authentication links. Protected routes preserve their requested destination through the `callbackURL` sign-in parameter. Sign-in and sign-up share a consistent form layout with explicit label/input spacing.
