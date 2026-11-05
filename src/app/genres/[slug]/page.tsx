@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, Disc3, Mic2, Tags } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Disc3,
+  Mic2,
+  Tags,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +16,7 @@ import { genreService } from "@/server/services/genre-service.instance";
 
 interface GenrePageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ artistsPage?: string; albumsPage?: string }>;
 }
 export async function generateMetadata({ params }: GenrePageProps) {
   const { slug } = await params;
@@ -19,9 +28,66 @@ export async function generateMetadata({ params }: GenrePageProps) {
       }
     : { title: "Genre not found" };
 }
-export default async function GenrePage({ params }: GenrePageProps) {
-  const { slug } = await params;
-  const data = await genreService.getGenreBySlug(slug);
+function PaginationControls({
+  page,
+  pageSize,
+  total,
+  slug,
+  label,
+  queryKey,
+  otherPage,
+  otherKey,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  slug: string;
+  label: string;
+  queryKey: "artistsPage" | "albumsPage";
+  otherPage: number;
+  otherKey: "artistsPage" | "albumsPage";
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  if (pageCount <= 1) return null;
+  const href = (nextPage: number) =>
+    `/genres/${slug}?${queryKey}=${nextPage}&${otherKey}=${otherPage}`;
+
+  return (
+    <nav aria-label={`${label} pagination`} className="mt-6 flex items-center justify-between">
+      <p className="text-xs text-muted-foreground">
+        Page {page} of {pageCount}
+      </p>
+      <div className="flex gap-2">
+        {page > 1 ? (
+          <Link href={href(page - 1)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+            <ChevronLeft className="size-4" /> Previous
+          </Link>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm text-muted-foreground opacity-50">
+            <ChevronLeft className="size-4" /> Previous
+          </span>
+        )}
+        {page < pageCount ? (
+          <Link href={href(page + 1)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+            Next <ChevronRight className="size-4" />
+          </Link>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm text-muted-foreground opacity-50">
+            Next <ChevronRight className="size-4" />
+          </span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+export default async function GenrePage({ params, searchParams }: GenrePageProps) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
+  const parsedArtistsPage = Number(query.artistsPage ?? "1");
+  const parsedAlbumsPage = Number(query.albumsPage ?? "1");
+  const artistsPage = Number.isInteger(parsedArtistsPage) && parsedArtistsPage > 0 ? parsedArtistsPage : 1;
+  const albumsPage = Number.isInteger(parsedAlbumsPage) && parsedAlbumsPage > 0 ? parsedAlbumsPage : 1;
+  const data = await genreService.getGenreBySlug(slug, { artistsPage, albumsPage, pageSize: 12 });
   if (!data) notFound();
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
@@ -50,7 +116,7 @@ export default async function GenrePage({ params }: GenrePageProps) {
         <div className="flex items-center gap-3">
           <Mic2 className="size-5 text-primary" />
           <h2 className="text-2xl font-semibold">Artists</h2>
-          <Badge variant="secondary">{data.artists.length}</Badge>
+          <Badge variant="secondary">{data.genre.artistCount}</Badge>
         </div>
         <Separator className="my-5" />
         {data.artists.length ? (
@@ -80,12 +146,22 @@ export default async function GenrePage({ params }: GenrePageProps) {
             No artists in this genre have been added to the local catalog yet.
           </p>
         )}
+        <PaginationControls
+          page={data.pagination.artistsPage}
+          pageSize={data.pagination.pageSize}
+          total={data.pagination.artistTotal}
+          slug={slug}
+          label="artists"
+          queryKey="artistsPage"
+          otherPage={data.pagination.albumsPage}
+          otherKey="albumsPage"
+        />
       </section>
       <section className="mt-14">
         <div className="flex items-center gap-3">
           <Disc3 className="size-5 text-primary" />
           <h2 className="text-2xl font-semibold">Albums</h2>
-          <Badge variant="secondary">{data.albums.length}</Badge>
+          <Badge variant="secondary">{data.genre.albumCount}</Badge>
         </div>
         <Separator className="my-5" />
         {data.albums.length ? (
@@ -115,6 +191,16 @@ export default async function GenrePage({ params }: GenrePageProps) {
             No albums in this genre have been added to the local catalog yet.
           </p>
         )}
+        <PaginationControls
+          page={data.pagination.albumsPage}
+          pageSize={data.pagination.pageSize}
+          total={data.pagination.albumTotal}
+          slug={slug}
+          label="albums"
+          queryKey="albumsPage"
+          otherPage={data.pagination.artistsPage}
+          otherKey="artistsPage"
+        />
       </section>
       <p className="mt-10 text-xs text-muted-foreground">
         Genre names come from the curated SoundScape genre vocabulary. Counts

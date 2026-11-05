@@ -125,4 +125,18 @@ describe("MusicBrainz HTTP client", () => {
     expect(result).toEqual({ result: "recovered" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it.each([408, 500])("retries transient HTTP status %s", async (status) => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("temporary failure", { status }))
+      .mockResolvedValueOnce(Response.json({ result: "recovered" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      musicBrainzGet(`test/retry-status-${status}`, {}),
+    ).resolves.toEqual({ result: "recovered" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
 });

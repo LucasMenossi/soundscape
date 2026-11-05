@@ -90,6 +90,30 @@ export class PrismaAlbumRepository implements AlbumRepository {
     return records.map(mapPrismaAlbumWithPrimaryArtist);
   }
 
+  async findByPrimaryArtistIdPage(
+    artistId: string,
+    musicBrainzReleaseGroupIds: string[],
+    options: { skip: number; take: number },
+  ): Promise<AlbumWithPrimaryArtist[]> {
+    if (musicBrainzReleaseGroupIds.length === 0) return [];
+
+    const records = await prisma.album.findMany({
+      where: {
+        primaryArtistId: artistId,
+        musicBrainzReleaseGroupId: { in: musicBrainzReleaseGroupIds },
+      },
+      include: { primaryArtist: true },
+      orderBy: [
+        { firstReleaseDate: "asc" },
+        { title: "asc" },
+      ],
+      skip: options.skip,
+      take: options.take,
+    });
+
+    return records.map(mapPrismaAlbumWithPrimaryArtist);
+  }
+
   async findByMusicBrainzReleaseGroupId(
     musicBrainzReleaseGroupId: string,
   ): Promise<Album | null> {

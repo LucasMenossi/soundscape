@@ -56,6 +56,46 @@ export class AlbumService {
     artistId: string,
     musicBrainzArtistId: string,
   ): Promise<AlbumWithPrimaryArtist[]> {
+    const syncedReleaseGroupIds = await this.syncArtistDiscography(musicBrainzArtistId);
+    const persistedAlbums = await this.repository.findByPrimaryArtistId(artistId);
+
+    return persistedAlbums.filter((album) =>
+      syncedReleaseGroupIds.has(album.musicBrainzReleaseGroupId),
+    );
+  }
+
+  async getAlbumsByArtistPage(
+    artistId: string,
+    musicBrainzArtistId: string,
+    options: { page?: number; pageSize?: number } = {},
+  ): Promise<{
+    albums: AlbumWithPrimaryArtist[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const pageSize = Math.min(Math.max(options.pageSize ?? 12, 1), 50);
+    const page = Math.max(options.page ?? 1, 1);
+    const syncedReleaseGroupIds = await this.syncArtistDiscography(musicBrainzArtistId);
+    const ids = [...syncedReleaseGroupIds];
+    const start = (page - 1) * pageSize;
+    const albums = await this.repository.findByPrimaryArtistIdPage(
+      artistId,
+      ids,
+      { skip: start, take: pageSize },
+    );
+
+    return {
+      albums,
+      total: ids.length,
+      page,
+      pageSize,
+    };
+  }
+
+  private async syncArtistDiscography(
+    musicBrainzArtistId: string,
+  ): Promise<Set<string>> {
     const validatedMusicBrainzArtistId = musicBrainzArtistIdSchema.parse(
       musicBrainzArtistId,
     );
@@ -73,15 +113,10 @@ export class AlbumService {
         .map(({ album }) => this.repository.upsertFromCatalog(album)),
     );
 
-    const syncedReleaseGroupIds = new Set(
-      syncedAlbums.map((album) => album.musicBrainzReleaseGroupId),
-    );
-    const persistedAlbums = await this.repository.findByPrimaryArtistId(artistId);
-
+    // Only include release groups returned by the current provider response.
     // Older syncs may have persisted singles, compilations or live releases.
-    // Only return records included in the current, filtered provider response.
-    return persistedAlbums.filter((album) =>
-      syncedReleaseGroupIds.has(album.musicBrainzReleaseGroupId),
+    return new Set(
+      syncedAlbums.map((album) => album.musicBrainzReleaseGroupId),
     );
   }
 

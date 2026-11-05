@@ -101,11 +101,20 @@ function getRetryDelay(retryAfter: string | null, attempt: number): number {
     }
   }
 
-  return Math.min(1000 * 2 ** attempt, 8000);
+  const exponentialDelay = Math.min(1000 * 2 ** attempt, 8000);
+  const jitter = Math.floor(Math.random() * Math.min(500, exponentialDelay * 0.2));
+  return exponentialDelay + jitter;
 }
 
 function isRetryableStatus(status: number): boolean {
-  return status === 429 || status === 502 || status === 503 || status === 504;
+  return (
+    status === 408 ||
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
 }
 
 function getCacheTTL(): number {

@@ -111,4 +111,21 @@ describe("GenreService", () => {
     expect(repository.listGenres).toHaveBeenCalledOnce();
     expect(repository.syncGenreCatalog).not.toHaveBeenCalled();
   });
+
+  it("forwards independent artist and album pagination to the repository", async () => {
+    const service = new GenreService(repository, provider, 60_000);
+
+    await service.getGenreBySlug("alternative-rock", {
+      artistsPage: 2,
+      albumsPage: 3,
+      pageSize: 12,
+    });
+
+    expect(repository.findBySlug).toHaveBeenCalledWith("alternative-rock", {
+      artistsPage: 2,
+      albumsPage: 3,
+      pageSize: 12,
+    });
+  });
+
 });

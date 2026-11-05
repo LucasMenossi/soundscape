@@ -59,6 +59,7 @@ describe("AlbumService", () => {
       findById: vi.fn(),
       findByIdWithPrimaryArtist: vi.fn(),
       findByPrimaryArtistId: vi.fn(),
+      findByPrimaryArtistIdPage: vi.fn().mockResolvedValue([]),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog,
     };
@@ -101,6 +102,7 @@ describe("AlbumService", () => {
       findById: vi.fn(),
       findByIdWithPrimaryArtist: vi.fn(),
       findByPrimaryArtistId,
+      findByPrimaryArtistIdPage: vi.fn().mockResolvedValue([]),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog,
     };
@@ -133,6 +135,7 @@ describe("AlbumService", () => {
       findById: vi.fn(),
       findByIdWithPrimaryArtist: vi.fn(),
       findByPrimaryArtistId: vi.fn(),
+      findByPrimaryArtistIdPage: vi.fn().mockResolvedValue([]),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog: vi.fn(),
     };
@@ -153,6 +156,7 @@ describe("AlbumService", () => {
       findById: vi.fn().mockResolvedValue(persistedAlbum),
       findByIdWithPrimaryArtist: vi.fn(),
       findByPrimaryArtistId: vi.fn(),
+      findByPrimaryArtistIdPage: vi.fn().mockResolvedValue([]),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog: vi.fn(),
     };
@@ -178,6 +182,7 @@ describe("AlbumService", () => {
       findById: vi.fn(),
       findByIdWithPrimaryArtist,
       findByPrimaryArtistId: vi.fn(),
+      findByPrimaryArtistIdPage: vi.fn().mockResolvedValue([]),
       findByMusicBrainzReleaseGroupId: vi.fn(),
       upsertFromCatalog: vi.fn(),
     };
@@ -193,4 +198,56 @@ describe("AlbumService", () => {
     expect(findByIdWithPrimaryArtist).toHaveBeenCalledWith("album-internal-id");
     expect(result).toEqual(persistedAlbumWithArtist);
   });
+  it("returns a bounded page of the synchronized discography", async () => {
+    const albums = Array.from({ length: 25 }, (_, index) => ({
+      ...persistedAlbumWithArtist,
+      id: `album-${index + 1}`,
+      musicBrainzReleaseGroupId: `b1392450-e666-3926-a536-22c65f83${index.toString(16).padStart(4, "0")}`,
+      title: `Album ${index + 1}`,
+    }));
+    const repository: AlbumRepository = {
+      findById: vi.fn(),
+      findByIdWithPrimaryArtist: vi.fn(),
+      findByPrimaryArtistId: vi.fn(),
+      findByPrimaryArtistIdPage: vi.fn().mockResolvedValue(albums.slice(12, 24)),
+      findByMusicBrainzReleaseGroupId: vi.fn(),
+      upsertFromCatalog: vi.fn().mockImplementation(async (album: AlbumCatalogData) => ({
+        ...persistedAlbum,
+        musicBrainzReleaseGroupId: album.musicBrainzReleaseGroupId,
+      })),
+    };
+    const provider: AlbumCatalogProvider = {
+      searchAlbums: vi.fn(),
+      searchAlbumsByArtist: vi.fn().mockResolvedValue({
+        count: 25,
+        offset: 0,
+        results: albums.map((album) => ({
+          album: {
+            ...catalogAlbum,
+            musicBrainzReleaseGroupId: album.musicBrainzReleaseGroupId,
+            title: album.title,
+          },
+          score: 100,
+        })),
+      }),
+    };
+    const service = new AlbumService(repository, provider);
+
+    const result = await service.getAlbumsByArtistPage(
+      "artist-internal-id",
+      catalogAlbum.primaryArtist.musicBrainzId,
+      { page: 2, pageSize: 12 },
+    );
+
+    expect(result.total).toBe(25);
+    expect(result.page).toBe(2);
+    expect(result.pageSize).toBe(12);
+    expect(result.albums).toHaveLength(12);
+    expect(repository.findByPrimaryArtistIdPage).toHaveBeenCalledWith(
+      "artist-internal-id",
+      expect.any(Array),
+      { skip: 12, take: 12 },
+    );
+  });
+
 });

@@ -122,4 +122,36 @@ describe("PrismaGenreRepository synchronization", () => {
     ).rejects.toThrow("Failed to resolve all normalized genres");
     expect(tx.artistGenre.deleteMany).not.toHaveBeenCalled();
   });
+
+  it("paginates artist and album associations independently", async () => {
+    prismaMock.genre.findUnique.mockResolvedValue({
+      id: "genre-1",
+      name: "Alternative rock",
+      slug: "alternative-rock",
+      _count: { artists: 31, albums: 25 },
+      artists: [],
+      albums: [],
+    });
+
+    const result = await repository.findBySlug("alternative-rock", {
+      artistsPage: 2,
+      albumsPage: 3,
+      pageSize: 10,
+    });
+
+    expect(prismaMock.genre.findUnique).toHaveBeenCalledWith({
+      where: { slug: "alternative-rock" },
+      include: expect.objectContaining({
+        artists: expect.objectContaining({ skip: 10, take: 10 }),
+        albums: expect.objectContaining({ skip: 20, take: 10 }),
+      }),
+    });
+    expect(result?.pagination).toEqual({
+      artistsPage: 2,
+      albumsPage: 3,
+      pageSize: 10,
+      artistTotal: 31,
+      albumTotal: 25,
+    });
+  });
 });

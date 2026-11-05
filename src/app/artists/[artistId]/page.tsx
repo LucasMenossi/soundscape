@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
   Disc3,
   Globe2,
-  Handshake,
   Mic2,
-  Users,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,81 +16,11 @@ import { Separator } from "@/components/ui/separator";
 import { albumService } from "@/server/services/album-service.instance";
 import { artistService } from "@/server/services/artist-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
-import type { ArtistRelationship } from "@/server/domain/artist";
+import { tagService } from "@/server/services/tag-service.instance";
 
 interface ArtistPageProps {
   params: Promise<{ artistId: string }>;
-}
-
-interface RelationshipGroup {
-  title: string;
-  icon: typeof Users;
-  items: ArtistRelationship[];
-}
-
-function groupRelationships(
-  relationships: ArtistRelationship[],
-): RelationshipGroup[] {
-  return [
-    {
-      title: "Band members",
-      icon: Users,
-      items: relationships.filter(
-        (item) => item.relationshipType === "band member",
-      ),
-    },
-    {
-      title: "Band relationships",
-      icon: Users,
-      items: relationships.filter(
-        (item) => item.relationshipType === "band relationship",
-      ),
-    },
-    {
-      title: "Bands",
-      icon: Mic2,
-      items: relationships.filter(
-        (item) => item.relationshipType === "member of band",
-      ),
-    },
-    {
-      title: "Collaborations",
-      icon: Handshake,
-      items: relationships.filter(
-        (item) => item.relationshipType === "collaboration",
-      ),
-    },
-    {
-      title: "Supporting artists",
-      icon: Users,
-      items: relationships.filter(
-        (item) =>
-          item.relationshipType === "supporting artist" ||
-          item.relationshipType === "supporting relationship",
-      ),
-    },
-    {
-      title: "Artists they support",
-      icon: Users,
-      items: relationships.filter(
-        (item) => item.relationshipType === "supported artist",
-      ),
-    },
-    {
-      title: "Subgroups and side projects",
-      icon: Users,
-      items: relationships.filter(
-        (item) => item.relationshipType === "subgroup",
-      ),
-    },
-    {
-      title: "Former names",
-      icon: Mic2,
-      items: relationships.filter(
-        (item) => item.relationshipType === "renamed from",
-      ),
-    },
-  ].filter((group) => group.items.length > 0);
+  searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: ArtistPageProps) {
@@ -105,41 +35,45 @@ export async function generateMetadata({ params }: ArtistPageProps) {
     : { title: "Artist not found" };
 }
 
-export default async function ArtistPage({ params }: ArtistPageProps) {
-  const { artistId } = await params;
+export default async function ArtistPage({
+  params,
+  searchParams,
+}: ArtistPageProps) {
+  const [{ artistId }, query] = await Promise.all([params, searchParams]);
+  const parsedPage = Number(query.page ?? "1");
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+
   const artist = await artistService.getArtistById(artistId);
   if (!artist) notFound();
 
-  const albums = await albumService.getAlbumsByArtist(
+  const discography = await albumService.getAlbumsByArtistPage(
     artist.id,
     artist.musicBrainzId,
+    { page, pageSize: 12 },
   );
+  const { albums } = discography;
 
   try {
     await genreService.syncArtistGenres(artist.id, artist.musicBrainzId);
-  } catch {
-    // Genre metadata is optional enrichment; keep the artist page available during provider outages.
-  }
-
-  try {
-    await artistService.syncArtistRelationships(
-      artist.id,
-      artist.musicBrainzId,
-    );
   } catch (error) {
-    // Keep the artist page available, but retain server-side diagnostics instead of silently hiding integration failures.
-    console.error("[SoundScape] Failed to sync artist relationships", {
+    console.error("[SoundScape] Failed to sync artist genres", {
       artistId: artist.id,
       musicBrainzId: artist.musicBrainzId,
       error,
     });
   }
 
-  const [artistGenres, relationships] = await Promise.all([
+  const [artistGenres, artistTags] = await Promise.all([
     genreService.getArtistGenres(artist.id),
-    artistService.getArtistRelationships(artist.id),
+    tagService.getArtistTags(artist.musicBrainzId).catch((error) => {
+      console.error("[SoundScape] Failed to load artist tags", {
+        artistId: artist.id,
+        error,
+      });
+      return [];
+    }),
   ]);
-  const relationshipGroups = groupRelationships(relationships);
+
   const activeYears = [
     artist.beginDate,
     artist.endDate ?? (artist.beginDate ? "Present" : null),
@@ -182,6 +116,7 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
             {activeYears && <Badge variant="secondary">{activeYears}</Badge>}
           </div>
         </div>
+
         {artistGenres.length > 0 && (
           <div className="relative mt-8 flex flex-wrap gap-2">
             {artistGenres.slice(0, 12).map((genre) => (
@@ -196,83 +131,22 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
             ))}
           </div>
         )}
+
+        {artistTags.length > 0 && (
+          <div className="relative mt-5">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Community tags
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {artistTags.slice(0, 12).map((tag) => (
+                <Badge key={tag} variant="outline" className="font-normal">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
-
-      {relationshipGroups.length > 0 && (
-        <section className="mt-14">
-          <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">
-              Artist connections
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-              Related artists
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Documented relationships from MusicBrainz, not algorithmic
-              recommendations.
-            </p>
-          </div>
-          <div className="space-y-8">
-            {relationshipGroups.map((group) => {
-              const GroupIcon = group.icon;
-              return (
-                <div key={group.title}>
-                  <div className="mb-3 flex items-center gap-2">
-                    <GroupIcon className="size-4 text-primary" />
-                    <h3 className="font-medium">{group.title}</h3>
-                    <Badge variant="outline">{group.items.length}</Badge>
-                  </div>
-                  <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {group.items.map((relationship) => (
-                      <li key={relationship.id}>
-                        <Link
-                          href={`/artists/${relationship.artist.id}`}
-                          className="group block h-full"
-                        >
-                          <Card className="flex h-full items-center justify-between gap-3 p-4 transition-colors group-hover:border-primary/40">
-                            <div className="min-w-0">
-                              <p className="truncate font-medium transition-colors group-hover:text-primary">
-                                {relationship.artist.name}
-                              </p>
-                              {relationship.artist.disambiguation && (
-                                <p className="mt-1 truncate text-xs text-muted-foreground">
-                                  {relationship.artist.disambiguation}
-                                </p>
-                              )}
-                            </div>
-                            <ArrowUpRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
-                          </Card>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {relationshipGroups.length === 0 && (
-        <section className="mt-14">
-          <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">
-              Artist connections
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-              Related artists
-            </h2>
-          </div>
-          <Card className="border-dashed bg-card/30 p-8">
-            <p className="font-medium">No artist relationships available yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              MusicBrainz does not currently provide supported artist
-              relationships for this entry, or the relationship data could not
-              be synchronized. The artist catalog remains available.
-            </p>
-          </Card>
-        </section>
-      )}
 
       <section className="mt-14">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -288,8 +162,8 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
             </p>
           </div>
           <Badge variant="outline" className="gap-1.5">
-            <Disc3 className="size-3.5" /> {albums.length}{" "}
-            {albums.length === 1 ? "album" : "albums"}
+            <Disc3 className="size-3.5" /> {discography.total}{" "}
+            {discography.total === 1 ? "album" : "albums"}
           </Badge>
         </div>
         <Separator className="mb-6" />
@@ -297,15 +171,12 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {albums.map((album, index) => (
               <li key={album.id}>
-                <Link
-                  href={`/albums/${album.id}`}
-                  className="group block h-full"
-                >
+                <Link href={`/albums/${album.id}`} className="group block h-full">
                   <Card className="h-full overflow-hidden transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-lg group-hover:shadow-primary/5">
                     <div className="relative flex aspect-[1.35/1] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,oklch(0.32_0.06_160/55%),oklch(0.18_0.02_265))]">
                       <Disc3 className="size-16 text-foreground/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
                       <span className="absolute left-4 top-4 font-mono text-xs text-foreground/45">
-                        {String(index + 1).padStart(2, "0")}
+                        {String((page - 1) * discography.pageSize + index + 1).padStart(2, "0")}
                       </span>
                       <span className="absolute bottom-4 right-4 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-[.16em] text-white/65">
                         SoundScape catalog
@@ -317,8 +188,7 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
                       </h3>
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <p className="text-sm text-muted-foreground">
-                          {album.firstReleaseDate?.slice(0, 4) ??
-                            "Year unknown"}
+                          {album.firstReleaseDate?.slice(0, 4) ?? "Year unknown"}
                         </p>
                         <div className="flex items-center gap-2">
                           {album.albumType && (
@@ -342,6 +212,35 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
             </p>
           </Card>
         )}
+
+        {discography.total > discography.pageSize && (
+          <nav aria-label="Discography pagination" className="mt-6 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Showing {(page - 1) * discography.pageSize + 1}–{Math.min(page * discography.pageSize, discography.total)} of {discography.total} studio albums
+            </p>
+            <div className="flex gap-2">
+              {page > 1 ? (
+                <Link href={`/artists/${artist.id}?page=${page - 1}`} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                  <ChevronLeft className="size-4" /> Previous
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm text-muted-foreground opacity-50">
+                  <ChevronLeft className="size-4" /> Previous
+                </span>
+              )}
+              {page * discography.pageSize < discography.total ? (
+                <Link href={`/artists/${artist.id}?page=${page + 1}`} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                  Next <ChevronRight className="size-4" />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm text-muted-foreground opacity-50">
+                  Next <ChevronRight className="size-4" />
+                </span>
+              )}
+            </div>
+          </nav>
+        )}
+
         <p className="mt-6 text-xs leading-5 text-muted-foreground">
           Catalog data sourced from MusicBrainz. Singles, EPs, compilations,
           live albums and other secondary release types are excluded.

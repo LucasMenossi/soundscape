@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, Disc3, Mic2 } from "lucide-react";
 import { albumService } from "@/server/services/album-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
+import { tagService } from "@/server/services/tag-service.instance";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -35,10 +36,23 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
       album.id,
       album.musicBrainzReleaseGroupId,
     );
-  } catch {
-    /* Genre metadata is optional enrichment. */
+  } catch (error) {
+    console.error("[SoundScape] Failed to sync album genres", {
+      albumId: album.id,
+      musicBrainzReleaseGroupId: album.musicBrainzReleaseGroupId,
+      error,
+    });
   }
-  const albumGenres = await genreService.getAlbumGenres(album.id);
+  const [albumGenres, albumTags] = await Promise.all([
+    genreService.getAlbumGenres(album.id),
+    tagService.getAlbumTags(album.musicBrainzReleaseGroupId).catch((error) => {
+      console.error("[SoundScape] Failed to load album tags", {
+        albumId: album.id,
+        error,
+      });
+      return [];
+    }),
+  ]);
   const releaseDate = formatReleaseDate(album.firstReleaseDate);
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
@@ -97,6 +111,16 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
                 </Badge>
               </Link>
             ))}
+          </div>
+        )}
+        {albumTags.length > 0 && (
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Community tags</p>
+            <div className="flex flex-wrap gap-2">
+              {albumTags.slice(0, 12).map((tag) => (
+                <Badge key={tag} variant="outline" className="font-normal">{tag}</Badge>
+              ))}
+            </div>
           </div>
         )}
       </section>

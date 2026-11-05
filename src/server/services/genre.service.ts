@@ -74,18 +74,23 @@ export class GenreService {
   async listGenres() {
     try {
       await this.syncGenreCatalog();
-    } catch {
+    } catch (error) {
+      console.error("[SoundScape] Failed to sync genre catalog", { error });
       // Keep serving the last successfully synchronized catalog during provider outages.
     }
     return this.repository.listGenres();
   }
 
-  async getGenreBySlug(slug: string) {
+  async getGenreBySlug(
+    slug: string,
+    options?: { artistsPage?: number; albumsPage?: number; pageSize?: number },
+  ) {
     try {
       await this.syncGenreCatalog();
-    } catch {
+    } catch (error) {
+      console.error("[SoundScape] Failed to sync genre catalog", { error });
       // A previously synchronized catalog remains usable during provider outages.
     }
-    return this.repository.findBySlug(slugSchema.parse(slug));
+    return this.repository.findBySlug(slugSchema.parse(slug), options);
   }
 }

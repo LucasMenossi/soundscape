@@ -31,7 +31,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The catalog requires a configured PostgreSQL database and MusicBrainz User-Agent. Configure `DATABASE_URL`, `DIRECT_URL`, and `MUSICBRAINZ_USER_AGENT` in your local environment before using catalog routes.
+The catalog requires a configured PostgreSQL database and MusicBrainz User-Agent. Configure ``DATABASE_URL`, `DIRECT_URL`, and `MUSICBRAINZ_USER_AGENT` in your local environment before using catalog routes.
 
 ## Available scripts
 
@@ -41,6 +41,7 @@ npm run build     # Create a production build
 npm run start     # Run the production server
 npm run lint      # Run ESLint
 npm run typecheck # Run the TypeScript compiler
+npm run test      # Run Vitest
 ```
 
 ## Product constraints
@@ -54,10 +55,24 @@ npm run typecheck # Run the TypeScript compiler
 
 Artist detail pages include a discography section sourced from MusicBrainz release groups. Results are matched by the artist MusicBrainz ID, synchronized into the local catalog, and displayed in release-date order with links to the internal album detail pages.
 
-### Genre exploration
+### Genres and community tags
 
-The `/genres` route synchronizes the curated MusicBrainz genre vocabulary from `/ws/2/genre/all?fmt=txt`, independently of which artists or albums have already been visited. The plain-text endpoint returns the complete vocabulary in one request. The vocabulary is refreshed at most once per 24 hours per server process and is cached by the MusicBrainz HTTP client. Artist and release-group genre associations are imported with `inc=genres`; free-form `inc=tags` values are not used as genres. Existing legacy tag records outside the curated vocabulary are removed during the next successful genre-catalog synchronization. Genre pages show local SoundScape artist and album counts only; they do not imply complete MusicBrainz coverage. No Prisma schema migration is required for this slice because the existing genre tables are reused.
+SoundScape keeps two distinct kinds of catalog metadata:
 
-### Artist relationships
+- **Genres** use the curated SoundScape vocabulary, mapped from MusicBrainz `inc=genres`. They are persisted, navigable, and used for browse routes and genre associations.
+- **Community tags** come from MusicBrainz `inc=tags`. They are fetched separately and displayed as contextual labels; they are not persisted as genres and do not create browse routes. Values such as `1990s`, `seen live`, and `female vocalists` therefore cannot pollute the genre taxonomy.
 
-Artist detail pages request MusicBrainz `artist-rels` and persist a deliberately small subset of relationship types: band membership, collaboration, and supporting musicians. Direction is translated into a source-relative relationship label before persistence, so the existing `artist_relationships` schema can be reused without a migration. Relationship sections are shown only when MusicBrainz supplies a supported relationship; they are catalog relationships, not similarity recommendations. Provider failures do not block the artist page.
+Genre detail pages paginate local artist and album associations. Counts represent the complete local catalog, while each page returns a bounded slice.
+
+### Discography
+
+Artist pages display studio albums from MusicBrainz release groups. The provider retrieves the matching release-group catalog, persists canonical records, and the page presents it in 12-item pages. Singles, EPs, compilations, live albums and other secondary release types are excluded.
+
+### Deferred artist connections
+
+Artist relationship synchronization and presentation are currently deferred. The existing domain/repository work is retained for possible future use, but artist pages do not request `artist-rels` or render relationship sections. SoundScape does not present these catalog relationships as recommendations.
+
+
+### MusicBrainz resilience
+
+The MusicBrainz HTTP client applies the configured request interval, timeout, bounded retries, exponential backoff with jitter, and `Retry-After` handling. HTTP `408`, `429`, `500`, `502`, `503`, and `504` are treated as retryable. Only successful parsed responses are cached.

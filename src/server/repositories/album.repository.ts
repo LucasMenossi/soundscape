@@ -15,6 +15,12 @@ export interface AlbumRepository {
     artistId: string,
   ): Promise<AlbumWithPrimaryArtist[]>;
 
+  findByPrimaryArtistIdPage(
+    artistId: string,
+    musicBrainzReleaseGroupIds: string[],
+    options: { skip: number; take: number },
+  ): Promise<AlbumWithPrimaryArtist[]>;
+
   findByMusicBrainzReleaseGroupId(
     musicBrainzReleaseGroupId: string,
   ): Promise<Album | null>;

@@ -164,7 +164,15 @@ export class PrismaGenreRepository implements GenreRepository {
     }));
   }
 
-  async findBySlug(slug: string): Promise<GenreDetail | null> {
+  async findBySlug(
+    slug: string,
+    options: { artistsPage?: number; albumsPage?: number; pageSize?: number } = {},
+  ): Promise<GenreDetail | null> {
+    const pageSize = Math.min(Math.max(options.pageSize ?? 12, 1), 50);
+    const artistsPage = Math.max(options.artistsPage ?? 1, 1);
+    const albumsPage = Math.max(options.albumsPage ?? 1, 1);
+    const artistSkip = (artistsPage - 1) * pageSize;
+    const albumSkip = (albumsPage - 1) * pageSize;
     const record = await prisma.genre.findUnique({
       where: { slug },
       include: {
@@ -172,18 +180,30 @@ export class PrismaGenreRepository implements GenreRepository {
         artists: {
           include: { artist: true },
           orderBy: { artist: { name: "asc" } },
-          take: 30,
+          skip: artistSkip,
+          take: pageSize,
         },
         albums: {
           include: { album: { include: { primaryArtist: true } } },
-          orderBy: { album: { firstReleaseDate: "desc" } },
-          take: 30,
+          orderBy: [
+            { album: { firstReleaseDate: "desc" } },
+            { album: { title: "asc" } },
+          ],
+          skip: albumSkip,
+          take: pageSize,
         },
       },
     });
     if (!record) return null;
 
     return {
+      pagination: {
+        artistsPage,
+        albumsPage,
+        pageSize,
+        artistTotal: record._count.artists,
+        albumTotal: record._count.albums,
+      },
       genre: {
         id: record.id,
         name: record.name,
