@@ -123,3 +123,8 @@ See [Authentication implementation](docs/14-authentication-implementation.md) fo
 ### Authentication-aware navigation and forms
 
 The header only shows **My library** and **Collections** to authenticated users. Anonymous visitors see the public catalog navigation and sign-in/sign-up actions. Authenticated users see personal navigation and sign out instead of authentication links. Protected routes preserve their requested destination through the `callbackURL` sign-in parameter. Sign-in and sign-up share a consistent form layout with explicit label/input spacing.
+
+
+### npm dependency resolution
+
+The test toolchain uses Vitest 4.1 and Vite 8 to satisfy the Vite peer range introduced by Better Auth's optional SvelteKit peer. Use a supported Node.js version (`^20.19.0 || >=22.12.0`) and install with plain `npm install`; `--legacy-peer-deps` and `--force` are not required. See [npm peer dependency resolution](docs/16-npm-peer-dependency-resolution.md).
