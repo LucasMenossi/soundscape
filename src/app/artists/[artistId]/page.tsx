@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { ArtistRelationships } from "@/components/artist/artist-relationships";
 import { FavoriteButton } from "@/components/library/favorite-button";
 import { AddToCollectionForm } from "@/components/collections/add-to-collection-form";
 import { Card } from "@/components/ui/card";
@@ -81,7 +82,20 @@ export default async function ArtistPage({
     });
   }
 
-  const [artistGenres, artistTags] = await Promise.all([
+  try {
+    await artistService.syncArtistRelationships(
+      artist.id,
+      artist.musicBrainzId,
+    );
+  } catch (error) {
+    console.error("[SoundScape] Failed to sync artist relationships", {
+      artistId: artist.id,
+      musicBrainzId: artist.musicBrainzId,
+      error,
+    });
+  }
+
+  const [artistGenres, artistTags, artistRelationships] = await Promise.all([
     genreService.getArtistGenres(artist.id),
     tagService.getArtistTags(artist.musicBrainzId).catch((error) => {
       console.error("[SoundScape] Failed to load artist tags", {
@@ -90,6 +104,7 @@ export default async function ArtistPage({
       });
       return [];
     }),
+    artistService.getArtistRelationships(artist.id),
   ]);
 
   const activeYears = [
@@ -194,6 +209,8 @@ export default async function ArtistPage({
           </div>
         )}
       </section>
+
+      <ArtistRelationships relationships={artistRelationships} />
 
       <section className="mt-14">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

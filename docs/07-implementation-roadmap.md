@@ -32,22 +32,25 @@ Remaining verification: Playwright setup, preview deployment, and full CI valida
 - Independent pagination for genre artist and album lists.
 - Twelve-item pages for artist discography.
 - Community tags are fetched separately from genres and shown as non-navigable context.
-- Artist relationship synchronization and presentation are deferred; artist pages do not call `artist-rels`.
+- Artist relationship synchronization from MusicBrainz `artist-rels`, persisted as normalized artist-to-artist edges.
+- Artist relationship presentation grouped by catalog relationship type, with stable internal links to connected artist pages.
+- Relationship sync is cached in-process for 24 hours to avoid repeated provider/database work during normal page visits.
 - Original CSS-based artwork fallback.
 
-Exit validation still required: local browser walkthrough, empty/error-state review, and E2E coverage for search, artist, album, and genre navigation.
+Exit validation still required: local browser walkthrough, empty/error-state review, and E2E coverage for search, artist, album, genre, and artist-relationship navigation.
 
 ## Phase 3 — Authentication and personal curation
 
-**Status: Personal Library and Collections experiences implemented; authentication remains.**
+**Status: implemented baseline; E2E and security validation remain open.**
 
 - Personal Library page with separate artist and album sections.
 - Favorite and remove actions from artist and album detail pages.
 - User-scoped persistence through the Favorite application service and repository.
-- A single configured local workspace is used until authentication is implemented; it is not an authentication or anonymous-session mechanism.
 - Private collection list/detail routes with create, update, delete, add-item, and remove-item flows.
 - Artists and albums can be added to collections from their catalog detail pages.
-- Authentication and authorization integration remain the final Phase 3 increment.
+- Better Auth email/password authentication with sign-up, sign-in, sign-out, and server-side session lookup.
+- Personal routes and mutations require an authenticated user; public catalog browsing remains available anonymously.
+- Ownership checks are enforced in application services and repositories.
 
 ## Phase 4 — Artwork enablement
 
@@ -69,7 +72,6 @@ Exit validation still required: local browser walkthrough, empty/error-state rev
 
 ## Deferred
 
-- Artist relationship presentation and related-artist recommendations.
 - Similarity/recommendation algorithms.
 - Mood discovery, listening history, playback, streaming, and social features.
 
@@ -80,4 +82,4 @@ Exit validation still required: local browser walkthrough, empty/error-state rev
 - Application service supports create, update, delete, list, detail, add item, and remove item.
 - Database constraints prevent duplicate catalog items per collection and enforce exactly one catalog target per item.
 - Collection CRUD UI and item-management UI are implemented in `/collections` and `/collections/[collectionId]`.
-- Authentication remains the final Phase 3 increment.
+- Better Auth authentication and ownership enforcement are integrated.

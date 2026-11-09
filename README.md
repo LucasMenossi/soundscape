@@ -55,6 +55,12 @@ npm run test      # Run Vitest
 
 Artist detail pages include a discography section sourced from MusicBrainz release groups. Results are matched by the artist MusicBrainz ID, synchronized into the local catalog, and displayed in release-date order with links to the internal album detail pages.
 
+### Artist relationships
+
+Artist detail pages also show explicit relationships recorded by MusicBrainz, such as band membership, collaborations, supporting artists, and subgroups. Relationships are normalized and persisted locally, then grouped by relationship type with links to the related artist pages. They are catalog facts, not similarity scores or algorithmic recommendations.
+
+Successful relationship synchronization is cached in the running application process for 24 hours. If MusicBrainz is unavailable, previously persisted relationships remain available; an artist page without relationship data still renders normally. See [the artist relationships implementation note](docs/17-artist-relationships.md).
+
 ### Genres and community tags
 
 SoundScape keeps two distinct kinds of catalog metadata:

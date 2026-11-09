@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Artist, ArtistCatalogData } from "@/server/domain/artist";
+import type {
+  Artist,
+  ArtistCatalogData,
+  ArtistRelationshipCatalogData,
+} from "@/server/domain/artist";
 import type { ArtistRepository } from "@/server/repositories/artist.repository";
 import type { ArtistCatalogProvider } from "@/server/providers/musicbrainz/artist-catalog.provider";
 
@@ -139,5 +143,46 @@ describe("ArtistService", () => {
 
     expect(repository.findById).toHaveBeenCalledWith("artist-internal-id");
     expect(result).toEqual(persistedArtist);
+  });
+  it("deduplicates concurrent relationship syncs for the same artist", async () => {
+    let resolveRelationships!: (value: ArtistRelationshipCatalogData[]) => void;
+    const pendingRelationships = new Promise<ArtistRelationshipCatalogData[]>(
+      (resolve) => {
+        resolveRelationships = resolve;
+      },
+    );
+    const getArtistRelationships = vi
+      .fn()
+      .mockReturnValue(pendingRelationships);
+    const syncRelationships = vi.fn().mockResolvedValue(undefined);
+
+    const repository: ArtistRepository = {
+      findById: vi.fn(),
+      findByMusicBrainzId: vi.fn(),
+      upsertFromCatalog: vi.fn(),
+      syncRelationships,
+      findRelationshipsBySourceArtistId: vi.fn().mockResolvedValue([]),
+    };
+    const provider: ArtistCatalogProvider = {
+      searchArtists: vi.fn(),
+      getArtist: vi.fn(),
+      getArtistRelationships,
+    };
+
+    const service = new ArtistService(repository, provider);
+    const firstSync = service.syncArtistRelationships(
+      "artist-internal-id",
+      catalogArtist.musicBrainzId,
+    );
+    const secondSync = service.syncArtistRelationships(
+      "artist-internal-id",
+      catalogArtist.musicBrainzId,
+    );
+
+    resolveRelationships([]);
+    await Promise.all([firstSync, secondSync]);
+
+    expect(getArtistRelationships).toHaveBeenCalledTimes(1);
+    expect(syncRelationships).toHaveBeenCalledTimes(1);
   });
 });
