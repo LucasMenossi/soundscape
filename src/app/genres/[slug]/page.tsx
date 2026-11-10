@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { genreService } from "@/server/services/genre-service.instance";
+import { MainContent } from "@/components/main-content";
 
 interface GenrePageProps {
   params: Promise<{ slug: string }>;
@@ -53,13 +54,19 @@ function PaginationControls({
     `/genres/${slug}?${queryKey}=${nextPage}&${otherKey}=${otherPage}`;
 
   return (
-    <nav aria-label={`${label} pagination`} className="mt-6 flex items-center justify-between">
+    <nav
+      aria-label={`${label} pagination`}
+      className="mt-6 flex items-center justify-between"
+    >
       <p className="text-xs text-muted-foreground">
         Page {page} of {pageCount}
       </p>
       <div className="flex gap-2">
         {page > 1 ? (
-          <Link href={href(page - 1)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+          <Link
+            href={href(page - 1)}
+            className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted"
+          >
             <ChevronLeft className="size-4" /> Previous
           </Link>
         ) : (
@@ -68,7 +75,10 @@ function PaginationControls({
           </span>
         )}
         {page < pageCount ? (
-          <Link href={href(page + 1)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+          <Link
+            href={href(page + 1)}
+            className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-sm hover:bg-muted"
+          >
             Next <ChevronRight className="size-4" />
           </Link>
         ) : (
@@ -81,16 +91,29 @@ function PaginationControls({
   );
 }
 
-export default async function GenrePage({ params, searchParams }: GenrePageProps) {
+export default async function GenrePage({
+  params,
+  searchParams,
+}: GenrePageProps) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const parsedArtistsPage = Number(query.artistsPage ?? "1");
   const parsedAlbumsPage = Number(query.albumsPage ?? "1");
-  const artistsPage = Number.isInteger(parsedArtistsPage) && parsedArtistsPage > 0 ? parsedArtistsPage : 1;
-  const albumsPage = Number.isInteger(parsedAlbumsPage) && parsedAlbumsPage > 0 ? parsedAlbumsPage : 1;
-  const data = await genreService.getGenreBySlug(slug, { artistsPage, albumsPage, pageSize: 12 });
+  const artistsPage =
+    Number.isInteger(parsedArtistsPage) && parsedArtistsPage > 0
+      ? parsedArtistsPage
+      : 1;
+  const albumsPage =
+    Number.isInteger(parsedAlbumsPage) && parsedAlbumsPage > 0
+      ? parsedAlbumsPage
+      : 1;
+  const data = await genreService.getGenreBySlug(slug, {
+    artistsPage,
+    albumsPage,
+    pageSize: 12,
+  });
   if (!data) notFound();
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
+    <MainContent className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <Link
         href="/genres"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
@@ -207,6 +230,6 @@ export default async function GenrePage({ params, searchParams }: GenrePageProps
         and results represent the local SoundScape catalog, not the full
         MusicBrainz database.
       </p>
-    </main>
+    </MainContent>
   );
 }

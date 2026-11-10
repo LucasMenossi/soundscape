@@ -13,14 +13,14 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { getOptionalCurrentUser } from "@/lib/auth/current-user";
 
 const navLinkClass =
-  "inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+  "inline-flex h-8 items-center gap-1.5 rounded-lg px-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:gap-2 sm:px-3 sm:text-sm";
 
 export async function SiteHeader() {
   const user = await getOptionalCurrentUser();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-8">
         <Link
           href="/"
           className="group inline-flex shrink-0 items-center gap-2.5"
@@ -35,7 +35,7 @@ export async function SiteHeader() {
 
         <nav
           aria-label="Main navigation"
-          className="flex min-w-0 items-center justify-end gap-1"
+          className="flex shrink-0 items-center justify-end gap-0 sm:gap-1"
         >
           <Link href="/genres" aria-label="Genres" className={navLinkClass}>
             <Tags className="size-4" />
@@ -75,7 +75,7 @@ export async function SiteHeader() {
               <Link
                 href="/sign-in"
                 aria-label="Sign in"
-                className="inline-flex h-9 items-center gap-2 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
+                className="inline-flex h-8 items-center gap-1 rounded-lg px-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
               >
                 <LogIn className="size-4" />
                 <span className="hidden sm:inline">Sign in</span>
@@ -83,7 +83,7 @@ export async function SiteHeader() {
               <Link
                 href="/sign-up"
                 aria-label="Sign up"
-                className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:px-3"
+                className="inline-flex h-8 items-center gap-1 rounded-lg bg-primary px-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
               >
                 <UserPlus className="size-4 sm:hidden" />
                 <span className="hidden sm:inline">Sign up</span>

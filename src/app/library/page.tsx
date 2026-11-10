@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toggleFavoriteAction } from "@/server/actions/favorite.actions";
 import { favoriteService } from "@/server/services/favorite-service.instance";
 import { requireCurrentUser } from "@/lib/auth/current-user";
+import { MainContent } from "@/components/main-content";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export default async function LibraryPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
+    <MainContent className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/60 p-7 sm:p-10">
         <div className="pointer-events-none absolute -right-20 -top-28 size-80 rounded-full bg-primary/10 blur-[90px]" />
         <div className="relative">
@@ -216,6 +217,6 @@ export default async function LibraryPage() {
           />
         )}
       </section>
-    </main>
+    </MainContent>
   );
 }

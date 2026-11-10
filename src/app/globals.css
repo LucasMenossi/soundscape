@@ -15,3 +15,22 @@
 html { @apply scroll-smooth font-sans; }
 body { @apply bg-background text-foreground; background-image: radial-gradient(ellipse at 50% -20%, oklch(0.28 0.06 165 / 25%), transparent 48%); }
 ::selection { background: oklch(0.72 0.15 158 / 35%); }
+
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}

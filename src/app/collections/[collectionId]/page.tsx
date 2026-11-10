@@ -13,6 +13,7 @@ import {
 } from "@/server/actions/collection.actions";
 import { collectionService } from "@/server/services/collection-service.instance";
 import { requireCurrentUser } from "@/lib/auth/current-user";
+import { MainContent } from "@/components/main-content";
 
 interface CollectionPageProps {
   params: Promise<{ collectionId: string }>;
@@ -30,7 +31,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   if (!collection) notFound();
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
+    <MainContent className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <Link
         href="/collections"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
@@ -204,6 +205,6 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           </Card>
         </aside>
       </section>
-    </main>
+    </MainContent>
   );
 }

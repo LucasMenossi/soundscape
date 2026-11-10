@@ -27,6 +27,7 @@ import { favoriteService } from "@/server/services/favorite-service.instance";
 import { getOptionalCurrentUser } from "@/lib/auth/current-user";
 import { collectionService } from "@/server/services/collection-service.instance";
 import { artworkService } from "@/server/artwork/artwork-service.instance";
+import { MainContent } from "@/components/main-content";
 
 interface ArtistPageProps {
   params: Promise<{ artistId: string }>;
@@ -152,7 +153,7 @@ export default async function ArtistPage({
     .join(" – ");
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
+    <MainContent className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <Link
         href="/search"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
@@ -385,6 +386,6 @@ export default async function ArtistPage({
           live albums and other secondary release types are excluded.
         </p>
       </section>
-    </main>
+    </MainContent>
   );
 }

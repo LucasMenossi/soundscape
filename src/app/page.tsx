@@ -1,17 +1,11 @@
 import Link from "next/link";
-import {
-  ArrowDown,
-  ArrowRight,
-  Disc3,
-  LibraryBig,
-  Sparkles,
-  Tags,
-} from "lucide-react";
+import { ArrowRight, Disc3, LibraryBig, Sparkles, Tags } from "lucide-react";
 import { CatalogSearchForm } from "@/components/search/catalog-search-form";
 import { Badge } from "@/components/ui/badge";
+import { MainContent } from "@/components/main-content";
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 pb-20 pt-20 sm:px-8 sm:pt-28">
+    <MainContent className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 pb-20 pt-20 sm:px-8 sm:pt-28">
       <section className="relative mx-auto w-full max-w-4xl text-center">
         <div className="pointer-events-none absolute -top-24 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-primary/10 blur-[100px]" />
         <Badge
@@ -52,19 +46,23 @@ export default function Home() {
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </span>
         </Link>
-        <div className="rounded-2xl border border-border/80 bg-card/40 p-6">
-          <div className="mb-8 flex size-11 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+        <Link
+          href="/library"
+          className="group rounded-2xl border border-border/80 bg-card/40 p-6 transition-all hover:-translate-y-1 hover:border-primary/40 hover:bg-card"
+        >
+          <div className="mb-8 flex size-11 items-center justify-center rounded-xl bg-secondary text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
             <LibraryBig className="size-5" />
           </div>
           <h2 className="text-lg font-semibold">Build your own library</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Keep track of the artists and records you want to remember. Personal
-            collections are coming later.
+            Save the artists and albums you love, then organize them into
+            personal collections.
           </p>
-          <span className="mt-5 inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <ArrowDown className="size-4" /> Coming in a future release
+          <span className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-primary">
+            Open your library{" "}
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </span>
-        </div>
+        </Link>
         <Link
           href="/genres"
           className="group mt-4 rounded-2xl border border-border/80 bg-card/40 p-6 transition-all hover:-translate-y-1 hover:border-primary/40 sm:col-span-2"
@@ -83,6 +81,6 @@ export default function Home() {
           </span>
         </Link>
       </section>
-    </main>
+    </MainContent>
   );
 }

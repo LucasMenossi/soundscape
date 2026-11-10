@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 
 import { AuthForm } from "@/components/auth/auth-form";
+import { MainContent } from "@/components/main-content";
 
 export const metadata = {
   title: "Sign in",
@@ -10,7 +11,7 @@ export const metadata = {
 
 export default function SignInPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-12 sm:py-16">
+    <MainContent className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-12 sm:py-16">
       <Link
         href="/"
         className="mb-6 inline-flex w-fit items-center text-sm text-muted-foreground transition-colors hover:text-primary"
@@ -38,6 +39,6 @@ export default function SignInPage() {
           <AuthForm mode="sign-in" />
         </Suspense>
       </section>
-    </main>
+    </MainContent>
   );
 }

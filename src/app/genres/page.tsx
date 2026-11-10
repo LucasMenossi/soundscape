@@ -1,3 +1,4 @@
+import { MainContent } from "@/components/main-content";
 export const dynamic = "force-dynamic";
 
 import { Tags } from "lucide-react";
@@ -16,7 +17,7 @@ export default async function GenresPage() {
   const genres = await genreService.listGenres();
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
+    <MainContent className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <div className="max-w-3xl">
         <Badge
           variant="outline"
@@ -45,6 +46,6 @@ export default async function GenresPage() {
           </p>
         </Card>
       )}
-    </main>
+    </MainContent>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MainContent } from "@/components/main-content";
 
 export const metadata = {
   title: "Verify your email",
@@ -7,7 +8,7 @@ export const metadata = {
 
 export default function VerifyEmailPage() {
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-16">
+    <MainContent className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-16">
       <h1 className="text-3xl font-semibold tracking-tight">
         Verify your email
       </h1>
@@ -21,6 +22,6 @@ export default function VerifyEmailPage() {
       >
         Return to sign in
       </Link>
-    </main>
+    </MainContent>
   );
 }

@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatMusicBrainzDate } from "@/lib/format-musicbrainz-date";
 import { ArtworkFrame } from "@/components/artwork/artwork-frame";
 import { artworkService } from "@/server/artwork/artwork-service.instance";
+import { MainContent } from "@/components/main-content";
 interface AlbumPageProps {
   params: Promise<{ albumId: string }>;
 }
@@ -77,7 +78,7 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
       return null;
     });
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
+    <MainContent className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <Link
         href={`/artists/${album.primaryArtist.id}`}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
@@ -196,6 +197,6 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           </Card>
         </div>
       </section>
-    </main>
+    </MainContent>
   );
 }
