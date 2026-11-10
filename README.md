@@ -156,3 +156,7 @@ Artist pages query TheAudioDB by MusicBrainz artist MBID and prefer the dedicate
 - [Artist relationships](docs/17-artist-relationships.md)
 - [Artwork enablement](docs/18-artwork-enablement.md)
 - [Architecture decision records](docs/adr/)
+
+## End-to-end tests
+
+See [docs/09-e2e-testing.md](docs/09-e2e-testing.md) for Playwright setup and the isolated Neon test-branch workflow. Run with `npm run test:e2e`.

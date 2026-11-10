@@ -30,12 +30,23 @@ export function AddToCollectionForm({
   entityType,
   returnTo,
 }: AddToCollectionFormProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const [state, formAction, isPending] = useActionState(
-    addCollectionItemAction,
+    async (
+      previousState: AddCollectionItemActionState,
+      formData: FormData,
+    ) => {
+      const nextState = await addCollectionItemAction(previousState, formData);
+
+      if (nextState.status === "success") {
+        setIsOpen(false);
+      }
+
+      return nextState;
+    },
     initialState,
   );
-
-  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!state.message || state.status === "idle") {

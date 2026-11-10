@@ -13,7 +13,8 @@
     "db:generate": "prisma generate --config prisma7.config.ts",
     "db:migrate": "prisma migrate dev --config prisma7.config.ts",
     "db:deploy": "prisma migrate deploy --config prisma7.config.ts",
-    "db:studio": "prisma studio --config prisma7.config.ts"
+    "db:studio": "prisma studio --config prisma7.config.ts",
+    "test:e2e": "tsx scripts/e2e/run.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -49,7 +50,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^8.3.6",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "@playwright/test": "^1.51.1"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
