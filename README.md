@@ -33,6 +33,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 The catalog requires a configured PostgreSQL database and MusicBrainz User-Agent. Configure ``DATABASE_URL`, `DIRECT_URL`, and `MUSICBRAINZ_USER_AGENT` in your local environment before using catalog routes.
 
+After updating the project, apply the latest database migration and regenerate the Prisma Client:
+
+```bash
+npm run db:deploy
+npm run db:generate
+```
+
 ## Available scripts
 
 ```bash
@@ -42,13 +49,15 @@ npm run start     # Run the production server
 npm run lint      # Run ESLint
 npm run typecheck # Run the TypeScript compiler
 npm run test      # Run Vitest
+npm run db:studio # Open Prisma Studio
 ```
 
 ## Product constraints
 
 - MusicBrainz MBIDs are the canonical external identifiers for artists and release groups.
-- Third-party artwork is not publicly displayed until its specific rights and attribution requirements have been reviewed and cleared.
-- Original SoundScape artwork is the fallback when no cleared image is available.
+- Artist imagery is fetched from TheAudioDB using the canonical MusicBrainz artist MBID.
+- Album front covers are fetched from Cover Art Archive using the canonical MusicBrainz release-group MBID.
+- Original SoundScape artwork is the automatic fallback whenever no safe, high-confidence image is available.
 - The MVP is free-first and excludes playback and streaming integrations.
 
 ### Artist discography
@@ -73,11 +82,6 @@ Genre detail pages paginate local artist and album associations. Counts represen
 ### Discography
 
 Artist pages display studio albums from MusicBrainz release groups. The provider retrieves the matching release-group catalog, persists canonical records, and the page presents it in 12-item pages. Singles, EPs, compilations, live albums and other secondary release types are excluded.
-
-### Deferred artist connections
-
-Artist relationship synchronization and presentation are currently deferred. The existing domain/repository work is retained for possible future use, but artist pages do not request `artist-rels` or render relationship sections. SoundScape does not present these catalog relationships as recommendations.
-
 
 ### MusicBrainz resilience
 
@@ -134,3 +138,21 @@ The header only shows **My library** and **Collections** to authenticated users.
 ### npm dependency resolution
 
 The test toolchain uses Vitest 4.1 and Vite 8 to satisfy the Vite peer range introduced by Better Auth's optional SvelteKit peer. Use a supported Node.js version (`^20.19.0 || >=22.12.0`) and install with plain `npm install`; `--legacy-peer-deps` and `--force` are not required. See [npm peer dependency resolution](docs/16-npm-peer-dependency-resolution.md).
+
+## Automatic artwork (Phase 4)
+
+Artist pages query TheAudioDB by MusicBrainz artist MBID and prefer the dedicated artist thumbnail. Album pages query Cover Art Archive by MusicBrainz release-group MBID and select the front cover, preferring its 500px thumbnail. Both lookups and empty results are cached for seven days. If a provider has no image or is unavailable, the page displays original SoundScape artwork. A migration resets old Commons search timestamps so existing catalog entries are refreshed with the new providers. Set `THEAUDIODB_API_KEY` only if you have a key other than the free test key `2`. See [Artwork Enablement](docs/18-artwork-enablement.md).
+
+## Project documentation
+
+- [Product requirements](docs/01-product-requirements.md)
+- [MVP scope and acceptance](docs/02-mvp-scope-and-acceptance.md)
+- [Technical architecture](docs/03-technical-architecture.md)
+- [Domain model](docs/04-domain-model.md)
+- [External integrations](docs/05-integrations.md)
+- [Artwork and image policy](docs/06-artwork-and-image-policy.md)
+- [Implementation roadmap](docs/07-implementation-roadmap.md)
+- [Development guide](docs/08-development-guide.md)
+- [Artist relationships](docs/17-artist-relationships.md)
+- [Artwork enablement](docs/18-artwork-enablement.md)
+- [Architecture decision records](docs/adr/)

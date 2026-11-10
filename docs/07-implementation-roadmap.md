@@ -52,14 +52,17 @@ Exit validation still required: local browser walkthrough, empty/error-state rev
 - Personal routes and mutations require an authenticated user; public catalog browsing remains available anonymously.
 - Ownership checks are enforced in application services and repositories.
 
-## Phase 4 — Artwork enablement
+## Phase 4 — Automatic artwork enablement
 
-**Status: not started.**
+**Status: provider-based artist and album artwork implemented; local validation pending.**
 
-- Wikimedia Commons candidate ingestion.
-- Per-file human relevance and rights review.
-- Central artwork resolver and attribution UX.
-- Unknown or uncleared third-party artwork remains unavailable to public UI.
+- TheAudioDB artist thumbnails resolved by MusicBrainz artist MBID and Cover Art Archive front covers resolved by release-group MBID.
+- Persisted automatic selection decisions and seven-day successful/empty search cache.
+- Source attribution links for TheAudioDB and Cover Art Archive imagery.
+- Original SoundScape artwork fallback for low-confidence, unsupported, or unavailable images.
+- No per-image manual review workflow or artwork admin panel in the MVP.
+
+Remaining: run migrations, regenerate Prisma Client, validate tests/build, add E2E coverage, and define operational takedown handling.
 
 ## Phase 5 — Quality and MVP release
 

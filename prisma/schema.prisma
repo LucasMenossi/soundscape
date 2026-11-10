@@ -17,6 +17,7 @@ model Artist {
   beginDate      String?
   endDate        String?
   lastSyncedAt   DateTime?
+  artworkLastSearchedAt DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -26,6 +27,7 @@ model Artist {
   genres   ArtistGenre[]
   outgoing ArtistRelationship[] @relation("SourceArtist")
   incoming ArtistRelationship[] @relation("TargetArtist")
+  artworkAssets ArtworkAsset[]
 
   @@index([name])
   @@index([sortName])
@@ -38,6 +40,7 @@ model Album {
   title                     String
   firstReleaseDate          String?
   albumType                 String?
+  artworkLastSearchedAt     DateTime?
   primaryArtistId           String
   primaryArtist             Artist    @relation("PrimaryArtistAlbums", fields: [primaryArtistId], references: [id], onDelete: Restrict)
   lastSyncedAt              DateTime?
@@ -47,6 +50,7 @@ model Album {
   genres AlbumGenre[]
   favorites Favorite[]
   collectionItems CollectionItem[]
+  artworkAssets ArtworkAsset[]
 
   @@index([title])
   @@index([primaryArtistId])
@@ -111,6 +115,53 @@ model ArtistRelationship {
   @@map("artist_relationships")
 }
 
+
+enum ArtworkSourceProvider {
+  WIKIMEDIA_COMMONS
+  COVER_ART_ARCHIVE
+  THE_AUDIO_DB
+}
+
+enum ArtworkReviewStatus {
+  PENDING
+  AUTO_APPROVED
+  CLEARED
+  REJECTED
+}
+
+model ArtworkAsset {
+  id                String               @id @default(cuid())
+  artistId          String?
+  albumId           String?
+  sourceProvider    ArtworkSourceProvider
+  sourceFileId      String
+  sourcePageUrl     String
+  imageUrl          String
+  description       String?
+  creator           String?
+  credit            String?
+  licenseShortName  String?
+  licenseUrl        String?
+  width             Int?
+  height            Int?
+  relevanceScore    Int?
+  selectionReason   String?
+  reviewStatus      ArtworkReviewStatus  @default(PENDING)
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  reviewNotes       String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  artist Artist? @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  album  Album?  @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, sourceProvider, sourceFileId])
+  @@unique([albumId, sourceProvider, sourceFileId])
+  @@index([artistId, reviewStatus, updatedAt])
+  @@index([albumId, reviewStatus, updatedAt])
+  @@map("artwork_assets")
+}
 
 enum FavoriteEntityType {
   ARTIST

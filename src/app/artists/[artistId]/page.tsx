@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -12,6 +13,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { ArtistRelationships } from "@/components/artist/artist-relationships";
+import { ArtworkFrame } from "@/components/artwork/artwork-frame";
 import { FavoriteButton } from "@/components/library/favorite-button";
 import { AddToCollectionForm } from "@/components/collections/add-to-collection-form";
 import { Card } from "@/components/ui/card";
@@ -24,6 +26,7 @@ import { tagService } from "@/server/services/tag-service.instance";
 import { favoriteService } from "@/server/services/favorite-service.instance";
 import { getOptionalCurrentUser } from "@/lib/auth/current-user";
 import { collectionService } from "@/server/services/collection-service.instance";
+import { artworkService } from "@/server/artwork/artwork-service.instance";
 
 interface ArtistPageProps {
   params: Promise<{ artistId: string }>;
@@ -107,6 +110,36 @@ export default async function ArtistPage({
     artistService.getArtistRelationships(artist.id),
   ]);
 
+  const artistArtwork = await artworkService
+    .resolveArtistArtwork(artist)
+    .catch((error) => {
+      console.error("[SoundScape] Failed to resolve artist artwork", {
+        artistId: artist.id,
+        error,
+      });
+      return null;
+    });
+
+  // Reuse the same persisted artwork selections shown on album detail pages.
+  // Each lookup is isolated so one provider failure does not hide the rest of the discography.
+  const albumArtworks = await Promise.all(
+    albums.map(async (album) => {
+      try {
+        return await artworkService.resolveAlbumArtwork(album);
+      } catch (error) {
+        console.error(
+          "[SoundScape] Failed to resolve album artwork on artist page",
+          {
+            artistId: artist.id,
+            albumId: album.id,
+            error,
+          },
+        );
+        return null;
+      }
+    }),
+  );
+
   const activeYears = [
     formatMusicBrainzDate(artist.beginDate),
     artist.endDate
@@ -129,54 +162,64 @@ export default async function ArtistPage({
 
       <section className="relative mt-9 overflow-hidden rounded-3xl border border-border/80 bg-card/60 p-7 sm:p-10">
         <div className="pointer-events-none absolute -right-20 -top-28 size-80 rounded-full bg-primary/10 blur-[90px]" />
-        <div className="relative">
-          <Badge
-            variant="outline"
-            className="border-primary/25 bg-primary/5 text-primary"
-          >
-            <Mic2 className="mr-1.5 size-3" /> Artist
-          </Badge>
-          <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[1.05] tracking-[-.045em] sm:text-7xl">
-            {artist.name}
-          </h1>
-          <div className="mt-6">
-            {currentUser ? (
-              <div className="flex flex-wrap items-start gap-3">
-                <FavoriteButton
-                  entityId={artist.id}
-                  entityType="ARTIST"
-                  isFavorite={isFavorite}
-                  returnTo={`/artists/${artist.id}`}
-                />
-                <AddToCollectionForm
-                  collections={collections}
-                  entityId={artist.id}
-                  entityType="ARTIST"
-                  returnTo={`/artists/${artist.id}`}
-                />
-              </div>
-            ) : (
-              <Link
-                href={`/sign-in?callbackURL=${encodeURIComponent(`/artists/${artist.id}`)}`}
-                className="inline-flex h-9 items-center justify-center rounded-full border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
-              >
-                Sign in to save this artist
-              </Link>
+        <div className="relative grid gap-8 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+          <div className="min-w-0">
+            <Badge
+              variant="outline"
+              className="border-primary/25 bg-primary/5 text-primary"
+            >
+              <Mic2 className="mr-1.5 size-3" /> Artist
+            </Badge>
+            <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[1.05] tracking-[-.045em] sm:text-7xl">
+              {artist.name}
+            </h1>
+            <div className="mt-6">
+              {currentUser ? (
+                <div className="flex flex-wrap items-start gap-3">
+                  <FavoriteButton
+                    entityId={artist.id}
+                    entityType="ARTIST"
+                    isFavorite={isFavorite}
+                    returnTo={`/artists/${artist.id}`}
+                  />
+                  <AddToCollectionForm
+                    collections={collections}
+                    entityId={artist.id}
+                    entityType="ARTIST"
+                    returnTo={`/artists/${artist.id}`}
+                  />
+                </div>
+              ) : (
+                <Link
+                  href={`/sign-in?callbackURL=${encodeURIComponent(`/artists/${artist.id}`)}`}
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-border px-4 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  Sign in to save this artist
+                </Link>
+              )}
+            </div>
+            {artist.disambiguation && (
+              <p className="mt-4 max-w-2xl text-base text-muted-foreground">
+                {artist.disambiguation}
+              </p>
             )}
+            <div className="mt-8 flex flex-wrap gap-3">
+              {artist.countryCode && (
+                <Badge variant="secondary">
+                  <Globe2 className="mr-1.5 size-3" /> {artist.countryCode}
+                </Badge>
+              )}
+              {activeYears && <Badge variant="secondary">{activeYears}</Badge>}
+            </div>
           </div>
-          {artist.disambiguation && (
-            <p className="mt-4 max-w-2xl text-base text-muted-foreground">
-              {artist.disambiguation}
-            </p>
-          )}
-          <div className="mt-8 flex flex-wrap gap-3">
-            {artist.countryCode && (
-              <Badge variant="secondary">
-                <Globe2 className="mr-1.5 size-3" /> {artist.countryCode}
-              </Badge>
-            )}
-            {activeYears && <Badge variant="secondary">{activeYears}</Badge>}
-          </div>
+          <ArtworkFrame
+            artwork={artistArtwork}
+            title={artist.name}
+            subtitle={artist.disambiguation}
+            seed={artist.musicBrainzId}
+            className="relative mx-auto w-full max-w-[220px] md:mt-1"
+            imageSizes="220px"
+          />
         </div>
 
         {artistGenres.length > 0 && (
@@ -240,16 +283,31 @@ export default async function ArtistPage({
                   className="group block h-full"
                 >
                   <Card className="h-full overflow-hidden transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-lg group-hover:shadow-primary/5">
-                    <div className="relative flex aspect-[1.35/1] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,oklch(0.32_0.06_160/55%),oklch(0.18_0.02_265))]">
-                      <Disc3 className="size-16 text-foreground/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
-                      <span className="absolute left-4 top-4 font-mono text-xs text-foreground/45">
+                    <div className="relative aspect-[1.35/1] overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,oklch(0.32_0.06_160/55%),oklch(0.18_0.02_265))]">
+                      {albumArtworks[index] ? (
+                        <Image
+                          src={albumArtworks[index]!.src}
+                          alt={albumArtworks[index]!.alt}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Disc3 className="size-16 text-foreground/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
+                        </div>
+                      )}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
+                      <span className="absolute left-4 top-4 font-mono text-xs text-white/75">
                         {String(
                           (page - 1) * discography.pageSize + index + 1,
                         ).padStart(2, "0")}
                       </span>
-                      <span className="absolute bottom-4 right-4 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-[.16em] text-white/65">
-                        SoundScape catalog
-                      </span>
+                      {!albumArtworks[index] && (
+                        <span className="absolute bottom-4 right-4 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-[.16em] text-white/65">
+                          SoundScape catalog
+                        </span>
+                      )}
                     </div>
                     <div className="p-5">
                       <h3 className="line-clamp-2 min-h-12 font-semibold leading-6 transition-colors group-hover:text-primary">

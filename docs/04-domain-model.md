@@ -27,8 +27,23 @@ These concepts must remain separate:
 
 ## Artist relationships
 
-The existing `ArtistRelationship` model and repository implementation are retained, but relationship synchronization and UI presentation are deferred. Artist detail pages do not request MusicBrainz `artist-rels`. If reintroduced, relationship labels must preserve source-relative direction and must not be presented as similarity recommendations.
+`ArtistRelationship` stores directed catalog relationships from MusicBrainz `artist-rels`, linked to canonical local Artist records. The artist detail page groups these explicit catalog facts by relationship type and links to the related artist. They are not similarity scores or recommendations. Successful synchronization is cached in-process for 24 hours; persisted edges remain available when the provider is unavailable.
+
+## Artwork assets
+
+`ArtworkAsset` stores third-party artwork provenance for exactly one catalog entity (`artistId` or `albumId`). It preserves source provider/file identity, source page, image URL, description, creator, credit, license metadata, dimensions, automatic relevance score, and selection reason.
+
+- `PENDING` is the default for candidates not selected for public display.
+- `AUTO_APPROVED` means the provider returned an image associated with the canonical MusicBrainz identifier. It is not a claim of human review.
+- `CLEARED` is retained for legacy explicitly reviewed records.
+- `REJECTED` records a candidate that must not be displayed.
+- Public display is centralized in the server-side resolver, which validates status and HTTPS source/image URLs.
+- Artist and album searches are cached for seven days, including successful searches with no qualifying result.
+- Artist images are resolved through TheAudioDB by MusicBrainz artist MBID. Album front covers are resolved through Cover Art Archive by release-group MBID. Wikimedia Commons filename matching is disabled due to poor visual relevance.
+- No manual image-review workflow is required for the MVP.
+
+See [Artwork Enablement](18-artwork-enablement.md) and [ADR 0006](adr/0006-automatic-rights-constrained-artwork.md).
 
 ## Personal curation
 
-`User`, favorites, collections, and collection items remain planned for Phase 3. Their ownership and uniqueness constraints must be enforced at the database and service/repository boundaries.
+`User`, `Favorite`, `Collection`, and `CollectionItem` support authenticated personal curation. Ownership is scoped to the authenticated user and enforced at application service/repository boundaries. Collections can contain artists and albums, with database uniqueness constraints preventing duplicate catalog entries within one collection.

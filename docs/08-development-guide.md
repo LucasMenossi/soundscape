@@ -38,7 +38,7 @@ npm run test
 - Validate external provider payloads before use.
 - Keep Prisma and provider access server-only.
 - Use Server Components for initial catalog reads.
-- Do not expose unreviewed third-party artwork.
+- Do not expose third-party artwork outside the automatic rights/relevance resolver.
 - Log optional enrichment failures while preserving the core catalog page.
 - Add tests alongside each behavior change.
 

@@ -13,6 +13,8 @@ import { AddToCollectionForm } from "@/components/collections/add-to-collection-
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatMusicBrainzDate } from "@/lib/format-musicbrainz-date";
+import { ArtworkFrame } from "@/components/artwork/artwork-frame";
+import { artworkService } from "@/server/artwork/artwork-service.instance";
 interface AlbumPageProps {
   params: Promise<{ albumId: string }>;
 }
@@ -64,6 +66,16 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
     }),
   ]);
   const releaseDate = formatMusicBrainzDate(album.firstReleaseDate);
+  const albumArtwork = await artworkService
+    .resolveAlbumArtwork(album)
+    .catch((error) => {
+      console.error("[SoundScape] Failed to resolve album artwork", {
+        albumId: album.id,
+        musicBrainzReleaseGroupId: album.musicBrainzReleaseGroupId,
+        error,
+      });
+      return null;
+    });
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
       <Link
@@ -75,12 +87,15 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
       </Link>
       <section className="mt-9">
         <div className="grid gap-8 md:grid-cols-[minmax(240px,340px)_1fr] md:items-center">
-          <div className="relative mx-auto flex aspect-square w-full max-w-[340px] items-center justify-center overflow-hidden rounded-3xl border border-border/80 bg-[radial-gradient(ellipse_at_50%_40%,oklch(0.34_0.07_160/60%),oklch(0.17_0.02_265))] shadow-2xl shadow-black/20">
-            <Disc3 className="size-32 text-foreground/20" />
-            <span className="absolute bottom-5 text-[10px] uppercase tracking-[.22em] text-foreground/40">
-              Artwork not available
-            </span>
-          </div>
+          <ArtworkFrame
+            artwork={albumArtwork}
+            title={album.title}
+            subtitle={album.primaryArtist.name}
+            seed={album.musicBrainzReleaseGroupId}
+            kind="album"
+            className="mx-auto w-full max-w-[340px]"
+            imageSizes="(max-width: 768px) 100vw, 340px"
+          />
           <div className="py-4">
             <Badge
               variant="outline"
