@@ -19,10 +19,7 @@ test.describe("Catalog discovery", () => {
       exact: true,
     });
     await expect(rockHeading).toBeVisible();
-    await page
-      .getByRole("link")
-      .filter({ has: rockHeading })
-      .click();
+    await page.getByRole("link").filter({ has: rockHeading }).click();
 
     await expect(page).toHaveURL(/\/genres\/rock$/);
     await expect(
@@ -43,9 +40,11 @@ test.describe("Catalog discovery", () => {
     page.setDefaultNavigationTimeout(90_000);
 
     await page.goto("/search");
-    await page.getByRole("searchbox", {
-      name: "Search for an artist or album",
-    }).fill("Radiohead");
+    await page
+      .getByRole("searchbox", {
+        name: "Search for an artist or album",
+      })
+      .fill("Radiohead");
     await page.getByRole("button", { name: "Search" }).click();
 
     const radioheadResult = page
@@ -72,10 +71,13 @@ test.describe("Catalog discovery", () => {
     await expect(page).toHaveURL(new RegExp(`${albumHref}$`));
     await expect(page.locator("main h1")).toContainText(albumName);
     await expect(
-      page.getByRole("heading", { name: "Album details" }),
+      page.getByRole("heading", { name: "Release editions & tracklist" }),
     ).toBeVisible();
 
-    await page.getByRole("link", { name: /Radiohead/ }).first().click();
+    await page
+      .getByRole("link", { name: /Radiohead/ })
+      .first()
+      .click();
     await expect(page.locator("main h1")).toContainText("Radiohead");
   });
 });

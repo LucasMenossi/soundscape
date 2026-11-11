@@ -27,7 +27,7 @@ Remaining verification: Playwright setup, preview deployment, and full CI valida
 **Status: core implementation present; final acceptance validation remains open.**
 
 - Artist detail pages and studio discography.
-- Album detail pages.
+- Album detail pages with selectable MusicBrainz release editions, edition metadata, and tracklists grouped by medium/disc.
 - Curated genre vocabulary, genre associations, and browse routes.
 - Independent pagination for genre artist and album lists.
 - Twelve-item pages for artist discography.

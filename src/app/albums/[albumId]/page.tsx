@@ -10,12 +10,12 @@ import { collectionService } from "@/server/services/collection-service.instance
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/library/favorite-button";
 import { AddToCollectionForm } from "@/components/collections/add-to-collection-form";
-import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatMusicBrainzDate } from "@/lib/format-musicbrainz-date";
 import { ArtworkFrame } from "@/components/artwork/artwork-frame";
 import { artworkService } from "@/server/artwork/artwork-service.instance";
 import { MainContent } from "@/components/main-content";
+import { AlbumReleaseExplorer } from "@/components/album/album-release-explorer";
 interface AlbumPageProps {
   params: Promise<{ albumId: string }>;
 }
@@ -71,6 +71,16 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
     .resolveAlbumArtwork(album)
     .catch((error) => {
       console.error("[SoundScape] Failed to resolve album artwork", {
+        albumId: album.id,
+        musicBrainzReleaseGroupId: album.musicBrainzReleaseGroupId,
+        error,
+      });
+      return null;
+    });
+  const releaseOverview = await albumService
+    .getAlbumReleaseOverview(album.id)
+    .catch((error) => {
+      console.error("[SoundScape] Failed to load album release editions", {
         albumId: album.id,
         musicBrainzReleaseGroupId: album.musicBrainzReleaseGroupId,
         error,
@@ -179,23 +189,33 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
           </div>
         )}
       </section>
-      <section className="mt-16">
-        <Separator className="mb-8" />
-        <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">
-              About the record
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold">Album details</h2>
-          </div>
-          <Card className="bg-card/50 p-6">
-            <p className="text-sm leading-7 text-muted-foreground">
-              Album information is sourced from MusicBrainz. Release editions,
-              track listings, and verified artwork will become available as the
-              catalog expands. Music genres are shown above when available.
-            </p>
-          </Card>
+      <section className="mt-16 space-y-8">
+        <Separator />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">
+            Explore the release
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">
+            Release editions & tracklist
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Explore editions cataloged by MusicBrainz. Details vary by release
+            and may be incomplete when contributors have not supplied the
+            information.
+          </p>
         </div>
+        {releaseOverview ? (
+          <AlbumReleaseExplorer
+            albumId={album.id}
+            releases={releaseOverview.releases}
+            initialRelease={releaseOverview.selectedRelease}
+          />
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            Release edition details are temporarily unavailable. You can still
+            explore the album and its catalog metadata above.
+          </div>
+        )}
       </section>
     </MainContent>
   );

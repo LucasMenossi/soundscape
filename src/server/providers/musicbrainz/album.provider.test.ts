@@ -149,7 +149,6 @@ describe("MusicBrainzAlbumProvider", () => {
     expect(result.count).toBe(1);
   });
 
-
   it("loads every browse page before filtering the artist discography", async () => {
     const artist = {
       id: "a74b1b7f-71a5-4011-9441-d0b5e4122711",
@@ -192,6 +191,109 @@ describe("MusicBrainzAlbumProvider", () => {
       offset: "100",
     });
     expect(result.results).toHaveLength(101);
+  });
+
+  it("loads release editions for a release group and maps edition metadata", async () => {
+    musicBrainzGet.mockResolvedValue({
+      id: "b1392450-e666-3926-a536-22c65f834433",
+      releases: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          title: "OK Computer",
+          date: "1997-06-16",
+          country: "GB",
+          status: "Official",
+          barcode: "724385200123",
+          packaging: "Jewel Case",
+          "label-info": [
+            {
+              "catalog-number": "CDNODATA 02",
+              label: { name: "Parlophone" },
+            },
+          ],
+          media: [{ position: 1, format: "CD", "track-count": 12 }],
+        },
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          title: "OK Computer (Reissue)",
+          date: "2009",
+          country: "GB",
+        },
+      ],
+    });
+
+    const provider = new MusicBrainzAlbumProvider();
+    const result = await provider.getAlbumReleases(
+      "b1392450-e666-3926-a536-22c65f834433",
+    );
+
+    expect(musicBrainzGet).toHaveBeenCalledWith(
+      "release-group/b1392450-e666-3926-a536-22c65f834433",
+      { inc: "releases" },
+    );
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({
+      id: "11111111-1111-4111-8111-111111111111",
+      country: "GB",
+      labels: [{ name: "Parlophone", catalogNumber: "CDNODATA 02" }],
+      media: [{ position: 1, format: "CD", trackCount: 12 }],
+    });
+  });
+
+  it("loads a release tracklist and maps recording duration as a fallback", async () => {
+    musicBrainzGet.mockResolvedValue({
+      id: "11111111-1111-4111-8111-111111111111",
+      title: "OK Computer",
+      date: "1997-06-16",
+      country: "GB",
+      status: "Official",
+      "label-info": [{ label: { name: "Parlophone" } }],
+      media: [
+        {
+          position: 1,
+          format: "CD",
+          "track-count": 2,
+          tracks: [
+            {
+              id: "33333333-3333-4333-8333-333333333333",
+              number: "1",
+              title: "Airbag",
+              length: 284000,
+            },
+            {
+              id: "44444444-4444-4444-8444-444444444444",
+              number: "2",
+              title: "Paranoid Android",
+              recording: { length: 383000 },
+            },
+          ],
+        },
+      ],
+    });
+
+    const provider = new MusicBrainzAlbumProvider();
+    const result = await provider.getReleaseDetails(
+      "11111111-1111-4111-8111-111111111111",
+    );
+
+    expect(musicBrainzGet).toHaveBeenCalledWith(
+      "release/11111111-1111-4111-8111-111111111111",
+      { inc: "recordings labels" },
+    );
+    expect(result.media[0].tracks).toEqual([
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        number: "1",
+        title: "Airbag",
+        lengthMs: 284000,
+      },
+      {
+        id: "44444444-4444-4444-8444-444444444444",
+        number: "2",
+        title: "Paranoid Android",
+        lengthMs: 383000,
+      },
+    ]);
   });
 
   it("escapes quotes and backslashes in the search phrase", async () => {

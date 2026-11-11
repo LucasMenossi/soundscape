@@ -1,4 +1,8 @@
 import type { AlbumCatalogData } from "@/server/domain/album";
+import type {
+  AlbumReleaseDetails,
+  AlbumReleaseEdition,
+} from "@/server/domain/album-release";
 
 export interface AlbumCatalogSearchOptions {
   limit?: number;
@@ -26,4 +30,10 @@ export interface AlbumCatalogProvider {
     musicBrainzArtistId: string,
     options?: AlbumCatalogSearchOptions,
   ): Promise<AlbumCatalogSearchResponse>;
+
+  getAlbumReleases(
+    musicBrainzReleaseGroupId: string,
+  ): Promise<AlbumReleaseEdition[]>;
+
+  getReleaseDetails(musicBrainzReleaseId: string): Promise<AlbumReleaseDetails>;
 }

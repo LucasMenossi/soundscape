@@ -5,6 +5,8 @@
 - `Artist` is internally identified by a database ID and externally mapped to a unique MusicBrainz artist MBID.
 - `Album` represents a MusicBrainz release group and is mapped to a unique release-group MBID.
 - Artist names and album titles are not unique identifiers.
+- `Release` represents a concrete edition of an album/release group. A release group can have multiple releases with different dates, countries, labels, barcodes, packaging, and formats.
+- `Medium` represents a disc or other medium within a release; `Track` represents an individual track on that medium. Release, medium, and track details are currently fetched from MusicBrainz and mapped to domain types rather than persisted in Prisma.
 
 ## Genre versus community tag
 

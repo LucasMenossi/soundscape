@@ -1,9 +1,10 @@
 import "server-only";
 
+import type { Album, AlbumWithPrimaryArtist } from "@/server/domain/album";
 import type {
-  Album,
-  AlbumWithPrimaryArtist,
-} from "@/server/domain/album";
+  AlbumReleaseDetails,
+  AlbumReleaseEdition,
+} from "@/server/domain/album-release";
 import type { AlbumRepository } from "@/server/repositories/album.repository";
 import type {
   AlbumCatalogProvider,
@@ -56,8 +57,10 @@ export class AlbumService {
     artistId: string,
     musicBrainzArtistId: string,
   ): Promise<AlbumWithPrimaryArtist[]> {
-    const syncedReleaseGroupIds = await this.syncArtistDiscography(musicBrainzArtistId);
-    const persistedAlbums = await this.repository.findByPrimaryArtistId(artistId);
+    const syncedReleaseGroupIds =
+      await this.syncArtistDiscography(musicBrainzArtistId);
+    const persistedAlbums =
+      await this.repository.findByPrimaryArtistId(artistId);
 
     return persistedAlbums.filter((album) =>
       syncedReleaseGroupIds.has(album.musicBrainzReleaseGroupId),
@@ -76,7 +79,8 @@ export class AlbumService {
   }> {
     const pageSize = Math.min(Math.max(options.pageSize ?? 12, 1), 50);
     const page = Math.max(options.page ?? 1, 1);
-    const syncedReleaseGroupIds = await this.syncArtistDiscography(musicBrainzArtistId);
+    const syncedReleaseGroupIds =
+      await this.syncArtistDiscography(musicBrainzArtistId);
     const ids = [...syncedReleaseGroupIds];
     const start = (page - 1) * pageSize;
     const albums = await this.repository.findByPrimaryArtistIdPage(
@@ -96,9 +100,8 @@ export class AlbumService {
   private async syncArtistDiscography(
     musicBrainzArtistId: string,
   ): Promise<Set<string>> {
-    const validatedMusicBrainzArtistId = musicBrainzArtistIdSchema.parse(
-      musicBrainzArtistId,
-    );
+    const validatedMusicBrainzArtistId =
+      musicBrainzArtistIdSchema.parse(musicBrainzArtistId);
     const response = await this.provider.searchAlbumsByArtist(
       validatedMusicBrainzArtistId,
       { limit: 100, offset: 0 },
@@ -118,6 +121,57 @@ export class AlbumService {
     return new Set(
       syncedAlbums.map((album) => album.musicBrainzReleaseGroupId),
     );
+  }
+
+  async getAlbumReleaseOverview(albumId: string): Promise<{
+    releases: AlbumReleaseEdition[];
+    selectedRelease: AlbumReleaseDetails | null;
+  } | null> {
+    const album = await this.repository.findById(albumId);
+    if (!album) return null;
+
+    const releases = await this.provider.getAlbumReleases(
+      album.musicBrainzReleaseGroupId,
+    );
+    const initialRelease = releases[0];
+
+    if (!initialRelease) {
+      return { releases, selectedRelease: null };
+    }
+
+    let selectedRelease: AlbumReleaseDetails | null = null;
+    try {
+      selectedRelease = await this.provider.getReleaseDetails(
+        initialRelease.id,
+      );
+    } catch (error) {
+      // Keep edition metadata available even if the selected release's
+      // recordings endpoint is temporarily unavailable.
+      console.error("[SoundScape] Failed to load initial release tracklist", {
+        albumId,
+        releaseId: initialRelease.id,
+        error,
+      });
+    }
+
+    return { releases, selectedRelease };
+  }
+
+  async getAlbumReleaseDetails(
+    albumId: string,
+    releaseId: string,
+  ): Promise<AlbumReleaseDetails | null> {
+    const album = await this.repository.findById(albumId);
+    if (!album) return null;
+
+    const releases = await this.provider.getAlbumReleases(
+      album.musicBrainzReleaseGroupId,
+    );
+    const belongsToAlbum = releases.some((release) => release.id === releaseId);
+
+    if (!belongsToAlbum) return null;
+
+    return this.provider.getReleaseDetails(releaseId);
   }
 
   async getAlbumById(id: string): Promise<Album | null> {

@@ -160,3 +160,7 @@ Artist pages query TheAudioDB by MusicBrainz artist MBID and prefer the dedicate
 ## End-to-end tests
 
 See [docs/09-e2e-testing.md](docs/09-e2e-testing.md) for Playwright setup and the isolated Neon test-branch workflow. Run with `npm run test:e2e`.
+
+## Album release details
+
+Album pages include MusicBrainz release editions, edition metadata, and tracklists grouped by medium/disc. See [Album release editions and tracklists](docs/21-album-release-details.md).

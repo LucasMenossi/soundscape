@@ -11,6 +11,11 @@ import {
   mapMusicBrainzReleaseGroupSearchResult,
   type AlbumSearchResult,
 } from "./album.mapper";
+import {
+  musicBrainzReleaseDetailsSchema,
+  musicBrainzReleaseGroupReleasesSchema,
+} from "./album-release.schemas";
+import { mapReleaseDetails, mapReleaseEdition } from "./album-release.mapper";
 import type {
   AlbumCatalogProvider,
   AlbumCatalogSearchOptions,
@@ -75,6 +80,51 @@ export class MusicBrainzAlbumProvider implements AlbumCatalogProvider {
       offset: options.offset ?? 0,
       results,
     };
+  }
+
+  async getAlbumReleases(musicBrainzReleaseGroupId: string) {
+    const response = await musicBrainzGet<unknown>(
+      `release-group/${musicBrainzReleaseGroupId}`,
+      { inc: "releases" },
+    );
+    const parsed = musicBrainzReleaseGroupReleasesSchema.safeParse(response);
+
+    if (!parsed.success) {
+      throw new MusicBrainzError(
+        "MusicBrainz returned an invalid release-group editions response",
+        undefined,
+        { cause: parsed.error },
+      );
+    }
+
+    return (parsed.data.releases ?? [])
+      .map(mapReleaseEdition)
+      .sort((left, right) => {
+        // Prefer the earliest known release as the initial edition.
+        if (left.date && right.date) return left.date.localeCompare(right.date);
+        if (left.date) return -1;
+        if (right.date) return 1;
+        return left.title.localeCompare(right.title);
+      })
+      .slice(0, 100);
+  }
+
+  async getReleaseDetails(musicBrainzReleaseId: string) {
+    const response = await musicBrainzGet<unknown>(
+      `release/${musicBrainzReleaseId}`,
+      { inc: "recordings labels" },
+    );
+    const parsed = musicBrainzReleaseDetailsSchema.safeParse(response);
+
+    if (!parsed.success) {
+      throw new MusicBrainzError(
+        "MusicBrainz returned invalid release details",
+        undefined,
+        { cause: parsed.error },
+      );
+    }
+
+    return mapReleaseDetails(parsed.data);
   }
 
   async searchAlbums(

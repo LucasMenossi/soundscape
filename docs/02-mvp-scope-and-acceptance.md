@@ -69,6 +69,8 @@ Acceptance:
 - Album page resolves through a stable internal ID backed by release-group MBID.
 - Title, primary artist, and available date/metadata are displayed.
 - Artwork state is explicit in the resolver; unknown-rights images never reach the public UI.
+- Available release editions can be selected. Edition metadata (date, country, label, catalog number, barcode, packaging, and format) is displayed when supplied by MusicBrainz.
+- Tracklists are grouped by medium/disc and display track number, title, and duration when available. Missing catalog fields have explicit empty states.
 
 ### Favorites and library
 
