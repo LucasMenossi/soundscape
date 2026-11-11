@@ -19,6 +19,7 @@ import { AddToCollectionForm } from "@/components/collections/add-to-collection-
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatMusicBrainzDate } from "@/lib/format-musicbrainz-date";
+import { formatMusicBrainzCountry } from "@/lib/format-musicbrainz-country";
 import { albumService } from "@/server/services/album-service.instance";
 import { artistService } from "@/server/services/artist-service.instance";
 import { genreService } from "@/server/services/genre-service.instance";
@@ -56,6 +57,7 @@ export default async function ArtistPage({
 
   const artist = await artistService.getArtistById(artistId);
   if (!artist) notFound();
+  const artistCountry = formatMusicBrainzCountry(artist.countryCode);
 
   const currentUser = await getOptionalCurrentUser();
   const [isFavorite, collections] = currentUser
@@ -205,9 +207,9 @@ export default async function ArtistPage({
               </p>
             )}
             <div className="mt-8 flex flex-wrap gap-3">
-              {artist.countryCode && (
+              {artistCountry && (
                 <Badge variant="secondary">
-                  <Globe2 className="mr-1.5 size-3" /> {artist.countryCode}
+                  <Globe2 className="mr-1.5 size-3" /> {artistCountry}
                 </Badge>
               )}
               {activeYears && <Badge variant="secondary">{activeYears}</Badge>}

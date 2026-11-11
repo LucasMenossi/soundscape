@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { MainContent } from "@/components/main-content";
+import { formatMusicBrainzCountry } from "@/lib/format-musicbrainz-country";
 interface SearchPageProps {
   searchParams: Promise<{ q?: string | string[] }>;
 }
@@ -131,7 +132,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                           </h3>
                           <p className="mt-1 truncate text-sm text-muted-foreground">
                             {artist.disambiguation ??
-                              artist.countryCode ??
+                              formatMusicBrainzCountry(artist.countryCode) ??
                               "Artist"}
                           </p>
                         </div>

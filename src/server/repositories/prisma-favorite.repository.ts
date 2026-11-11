@@ -1,6 +1,10 @@
 import "server-only";
 
-import type { Favorite as PrismaFavorite, Artist, Album } from "@/generated/prisma/client";
+import type {
+  Favorite as PrismaFavorite,
+  Artist,
+  Album,
+} from "@/generated/prisma/client";
 
 import type {
   Favorite,
@@ -9,6 +13,7 @@ import type {
 } from "../domain/favorite";
 import type { FavoriteRepository } from "./favorite.repository";
 import { prisma } from "../db";
+import { formatMusicBrainzCountry } from "@/lib/format-musicbrainz-country";
 
 function toDomainFavorite(record: PrismaFavorite): Favorite {
   return {
@@ -30,7 +35,7 @@ function toFavoriteWithEntity(
     ? {
         id: artist.id,
         name: artist.name,
-        subtitle: artist.countryCode,
+        subtitle: formatMusicBrainzCountry(artist.countryCode),
         href: `/artists/${artist.id}`,
         image: null,
       }
@@ -45,7 +50,9 @@ function toFavoriteWithEntity(
       : null;
 
   if (!entity) {
-    throw new Error(`Favorite ${record.id} references a missing catalog entity`);
+    throw new Error(
+      `Favorite ${record.id} references a missing catalog entity`,
+    );
   }
 
   return { ...toDomainFavorite(record), entity };
@@ -60,8 +67,16 @@ export class PrismaFavoriteRepository implements FavoriteRepository {
     const record = await prisma.favorite.create({
       data:
         input.entityType === "ARTIST"
-          ? { userId: input.userId, entityType: "ARTIST", artistId: input.entityId }
-          : { userId: input.userId, entityType: "ALBUM", albumId: input.entityId },
+          ? {
+              userId: input.userId,
+              entityType: "ARTIST",
+              artistId: input.entityId,
+            }
+          : {
+              userId: input.userId,
+              entityType: "ALBUM",
+              albumId: input.entityId,
+            },
     });
     return toDomainFavorite(record);
   }

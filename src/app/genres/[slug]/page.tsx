@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { genreService } from "@/server/services/genre-service.instance";
 import { MainContent } from "@/components/main-content";
+import { formatMusicBrainzCountry } from "@/lib/format-musicbrainz-country";
 
 interface GenrePageProps {
   params: Promise<{ slug: string }>;
@@ -156,7 +157,9 @@ export default async function GenrePage({
                       {artist.name}
                     </h3>
                     <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {artist.disambiguation ?? artist.countryCode ?? "Artist"}
+                      {artist.disambiguation ??
+                        formatMusicBrainzCountry(artist.countryCode) ??
+                        "Artist"}
                     </p>
                   </div>
                   <ArrowUpRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />

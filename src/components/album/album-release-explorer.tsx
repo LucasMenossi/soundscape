@@ -8,6 +8,7 @@ import type {
 } from "@/server/domain/album-release";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { formatMusicBrainzCountry } from "@/lib/format-musicbrainz-country";
 
 interface AlbumReleaseExplorerProps {
   albumId: string;
@@ -34,7 +35,10 @@ function formatReleaseDate(date: string | null): string | null {
 }
 
 function editionLabel(release: AlbumReleaseEdition): string {
-  const details = [release.date, release.country].filter(Boolean);
+  const details = [
+    release.date,
+    formatMusicBrainzCountry(release.country),
+  ].filter(Boolean);
   const format = release.media.map((medium) => medium.format).find(Boolean);
   if (format) details.push(format);
   return details.length > 0
@@ -171,7 +175,10 @@ export function AlbumReleaseExplorer({
               label="Release date"
               value={formatReleaseDate(selectedRelease.date)}
             />
-            <Metadata label="Country" value={selectedRelease.country} />
+            <Metadata
+              label="Country / region"
+              value={formatMusicBrainzCountry(selectedRelease.country)}
+            />
             <Metadata label="Barcode" value={selectedRelease.barcode} />
             <Metadata label="Packaging" value={selectedRelease.packaging} />
             <Metadata
